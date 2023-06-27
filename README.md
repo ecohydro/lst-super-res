@@ -1,12 +1,11 @@
 # lst-super-res
-This repository constitutes a U-Net model whose goal is to increase the resolution of a low resolution image with the help with a seperate high resolution input. Concretely, this model was developed to increase the resolution of Land Surface Temperate (LST) images from 70m to 10m with the help of a 10m RGB basemap. The code for our U-Net was adapted from https://github.com/milesial/Pytorch-UNet. 
+This repository constitutes a U-Net model whose goal is to increase the resolution of a low resolution image (1 band) with the help with a seperate high resolution input (3 bands). Concretely, this model was developed to increase the resolution of Land Surface Temperate (LST) images from 70m to 10m with the help of a 10m RGB basemap. The code for our U-Net was adapted from https://github.com/milesial/Pytorch-UNet. 
 
-This code is highly flexible and, as with the U-Net implementation we borrow our basic structure from, takes any resonably sized image (try ~300-2000 pixels on each side). There are two inputs into the model: a basemap (in our case RGB), which should be at the resolution of the desired output, and a coarse target (in our case LST) which should be at the desired resolution of your original image you are hoping to increase the resolution of, but resized to the same resolution as the basemap. The output which the model will be trained on should be the same size and resolution as the basemap input. 
+This code is highly flexible and, as with the U-Net implementation we borrow our basic structure from, takes any resonably sized image (try ~300-2000 pixels on each side). There are two inputs into the model: a *basemap* (in our case RGB), which should be at the resolution of the desired output, and a *coarse target* (in our case LST) which should be at the desired resolution of your original image you are hoping to increase the resolution of, but resized to the same resolution as the basemap. The output which the model will be trained on should be the same size and resolution as the basemap input. 
 
-Alternatively, this U-net model allows pre-training in which it can be fed solely high resolution basemap images (RGB). This pre-training process includes randomizing and coarsening the high resolution RGB data in order to create synthetic "LST" data so the model can increase its pattern detection capabilities across more landscapes.
+Because high resolution training data of the target of choice is not always very available, the model also includes a pre-training feature wherein the model can create artificial data from basemap data and the model learns to highten the resolution of this artificial data, at which these weights can be transfered to the task using real target data. We include code to download and process RGB basemaps from PlanetLabs with some information on different land covers, though one must provide their own API key. 
 
-
-Finally, a Random Forest regressor is also available for comparing evaluation metrics as traditional pixel-based statistical models are the current state-of-the-art approach for heightening the resolution quality of LST images.
+Finally, a pixel-level Random Forest regressor is also available as a benchmark for performance on our various evaluation metrics.
 
 ## Installation instructions
 
@@ -34,31 +33,27 @@ The processed dataset for this particular project is currently not publicly avai
 _Note:_ Corresponding images from matching scenes should be named the same between folders, or you will get an error. 
 
 The location of some metadata must also be included in your configs file:
-- `splits_loc`: This the location of your file that determines how your dataset is to be split. It should contain a csv with the name of an image and whether it belongs to the "train", "val" or "test" set. The most recent file in this folder are used as your split. 
-- `target_norm_loc`: This is a space delimited file that includes mean and sd columns with entries for all of your target input images (in our case, LST). The average across these are taken to normalize the inputs. 
-- `basemap_norm_loc`: This is a space delimited file that includes mean (mean1, mean2, mean3) and sd (sd1, sd2, sd3) columns with entries for all of your input basemap images (in our case, RGB). The average across these are taken to normalize the inputs. 
+- `splits_loc`: This the location of your file that determines how your dataset is to be split. It should be a csv with the name of an image and whether it belongs to the "train", "val" or "test" set. The most recent file in this folder are used as your split. This file will be created in step 4: 'Split data'. 
+- `target_norm_loc`: This is a space delimited file that includes mean and sd columns with entries for all of your target input images (in our case, LST). The average across these are taken to normalize the inputs. [This is being updated and likely be obsolete since mean and sd of. thetarget norm will be calcualted in the dataloader]. 
+- `basemap_norm_loc`: This is a space delimited file that includes mean (mean1, mean2, mean3) and sd (sd1, sd2, sd3) columns with entries for all of your input basemap images (in our case, RGB). The average across these are taken to normalize the inputs. This file is to be used both during pre-training and regular training of the model. 
 
 - The metadata on the runs which includes information on their land cover type, `runs_metadata.csv` should be stored in a folder named "metadata" which is within your `data_root` as specified in your configs file. 
 
-_Note:_ It is OK to have NA values in the input and output target, but not in your basemap. There is built-in functionality to ignore areas where there is no information: input NAs are set to 0 and output NAs are ignored when calculating the loss.
+_Note:_ It is OK to have NA values in the input and output target, but not in your basemaps. There is built-in functionality to ignore areas where there is no information for the target: input NAs are set to 0 and output NAs are ignored when calculating the loss.
 
 4. Split data
 
-Input:
-
-`--config`: Path to the desired configuration file.  
-
-`data_root/metadata.csv`: a CSV file containing metadata inforamtion about the data including name, landcover type, and location.
-
-Output:
-
-`data_root/metadata/splits`: Folder containing a CSV file that indicates which observation belongs to each split and a TXT file that provides additional information regarding the split. Note that `data_root` is declared in your specified configuration file.
+To create a data split, you will need to have your data available in the location specified in your configs file and your metadata file, `data_root/metadata.csv`, which will be used to ensure your splits are even across different variables. 
 
 _Note:_ If `pretrain` is set to `True` in your configuration file, the metadata information should be stored as a CSV file under `data_root/pretrain_metadata.csv`. The output folder will be `data_root/metadata/pretrain_splits`.
 
 ```bash
 python3 code/split.py --config configs/base.yaml
 ```
+
+This will create `data_root/metadata/splits`, a folder containing a CSV file that indicates which observation belongs to each split and a TXT file that provides additional information regarding the split. Note that `data_root` is declared in your specified configuration file.
+
+Make sure to check if you consider your split to be adequately distributed across the variables of interest specified in your metadata file. 
 
 ## Reproduce results
 
