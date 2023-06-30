@@ -18,7 +18,20 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from skimage import img_as_float
 from skimage.metrics import structural_similarity
 
-def normalize_target(target_im, target_mean, target_sd, mean_for_nans=True):
+def normalize_target(target_im: Tensor, target_mean: float, target_sd: float, mean_for_nans: bool = True) -> Tensor:
+    """
+    Normalize the target image tensor based on the provided mean and standard deviation.
+
+    Args:
+        target_im (Tensor): The target image tensor to normalize.
+        target_mean (float): The mean value used for normalization.
+        target_sd (float): The standard deviation value used for normalization.
+        mean_for_nans (bool, optional): Flag indicating whether to replace NaN values with zero. 
+                                        Defaults to True.
+
+    Returns:
+        Tensor: The normalized target image tensor.
+    """
 
     target_im[target_im<=-3.4e+30] = float('nan')      # -3.4e+38 to NaN
 
@@ -30,9 +43,19 @@ def normalize_target(target_im, target_mean, target_sd, mean_for_nans=True):
     
     return target_im
 
-def unnormalize_target(target_im, target_mean, target_sd):
+def unnormalize_target(target_im: Tensor, target_mean: float, target_sd: float) -> Tensor:
+    """
+    Unnormalize the target image tensor based on the provided mean and standard deviation.
 
-    # normalize
+    Args:
+        target_im (Tensor): The normalized target image tensor to unnormalize.
+        target_mean (float): The mean value used for normalization.
+        target_sd (float): The standard deviation value used for normalization.
+
+    Returns:
+        Tensor: The unnormalized target image tensor.
+    """
+    # Unnormalize
     target_im = (target_im*target_sd) + target_mean
     
     return target_im
