@@ -11,38 +11,38 @@ num_workers: 4
 ### Dataset Parameters:
 
 # Path directory to all data information; called in code/splits.py
-data_root: /home/rstofer/lst-super-res/
+data_root: /home/waves/projects/lst-super-res
 
 # Path to input basemap folder (3 channel bands); called in code/splits.py, code/dataset_class.py, and code/predict_vis.py
-input_basemap: /home/rstofer/lst-super-res/For_CNN/inputs/RGB_672_10
+input_basemap: /home/waves/projects/lst-super-res/For_CNN/inputs/RGB_672_10
 # Path to input target folder (1 channel band); called in code/splits.py, code/dataset_class.py, and code/predict_vis.py
-input_target: /home/rstofer/lst-super-res/For_CNN/inputs/LST_672_70_10
+input_target: /home/waves/projects/lst-super-res/For_CNN/inputs/LST_672_70_10
 # Path to output target folder (1 channel band); called in code/RF.py, code/splits.py, code/dataset_class.py, and code/predict_vis.py
-output_target: /home/rstofer/lst-super-res/For_CNN/outputs/LST_672_10
+output_target: /home/waves/projects/lst-super-res/For_CNN/outputs/LST_672_10
 
 # Path to folder containing train/val/test split information; created in code/splits.py; called in code/dataset_class.py, code/predict_vis.py, and code/train.py
-splits_loc: /home/rstofer/lst-super-res/metadata/splits
+splits_loc: /home/waves/projects/lst-super-res/metadata/pretrain_test_splits
 
 # Path to file containing normalization values of target data (*.txt); called in code/dataset_class.py, code/RF.py, and code/predict.py
-target_norm_loc: /home/rstofer/lst-super-res/For_CNN/target_mean_sd_files672_70_10.txt
+target_norm_loc: /home/waves/projects/lst-super-res/For_CNN/target_mean_sd_files672_70_10.txt
 # Path to file containing normalization values of basemap data (*.txt); called in code/dataset_class.py and code/predict.py
-basemap_norm_loc: /home/rstofer/lst-super-res/For_CNN/basemap_mean_sd_files672_70_10.txt
+basemap_norm_loc: /home/waves/projects/lst-super-res/For_CNN/basemap_mean_sd_files672_70_10.txt
 
 # Path to save this experiment's models; called in code/predict.py, code/predict_vis.py, and code/train.py
-experiment_dir: /home/rstofer/lst-super-res/experiments/base
+experiment_dir: /home/waves/projects/lst-super-res/experiments/pretrain_test
 
 ### Model Training:
 
 # Determines whether the model should train on residuals (Boolean); called in code/dataset_class.py and code/predict.py
 Residual: True
 
-## Model parameters used for training
+## Model training parameters:
 
 # Declares learning rate; called in code/train.py
-learning_rate: 1e-5
+learning_rate: 1e-7
 
 # Declares amount of epochs for model training; called in code/predict.py and code/train.py
-epochs: 50
+epochs: 1
 
 # Declares batch size amount; called in code/predict.py, code/RF.py, and code/train.py
 batch_size: 1
@@ -58,24 +58,28 @@ epochs_done: 0
 # Set randomized seed (Int); called in code/dataset_class.py
 Seed: 1234
 
+# Declares whether the target ouput data should be coarsened to be the target input; called in code/dataset_class.py
+# Note: Only applicable for normal training as pre-training WILL coarsen data regardless
+coarsen_data: False
+
+# If coarsening is occuring, declare upsample scale amount for coarsened image; called in code/dataset_class.py
+# Note: Pretraining requires coarsening, default set to 8
+upsample_scale: 8
+
+### Visualization:
+# Declares whether predict.py should also create visualization images of prediction plots; called in code/predict.py
+visualize: True
+
 ### Pretraining:
 
 # Declares whether the model should perform pretraining (Boolean); called in code/dataset_class.py and code/split.py
-pretrain: False
+pretrain: True
 
 # Path to pretrain input basemap folder (3 channel bands); called in code/dataset_class.py and code/split.py
-pretrain_basemap: /home/rstofer/lst-super-res/For_pretrain/tiff
+pretrain_basemap: /home/waves/projects/lst-super-res/For_pretrain/tiles
 
 # Path to folder containing pretrain train/val/test split information; created in code/splits.py; called in code/dataset_class.py, code/predict_vis.py, and code/train.py
-pretrain_splits_loc: /home/rstofer/lst-super-res/metadata/pretrain_splits
+pretrain_splits_loc: /home/waves/projects/lst-super-res/metadata/pretrain_test_splits
 
 # Path to file containing normalization values of pretrain basemap data (*.txt); called in code/dataset_class.py and code/predict.py
 pretrain_basemap_norm_loc: /home/waves/projects/lst-super-res/For_pretrain/basemap_mean_sd_files.txt
-
-
-## Questions for Anna:
-# 1. Input_target is needed for visualizing predictions... How can I do that when it is only created once during training (thru dataset_class.py) and is not saved anywhere
-# 2. Similar issue in predict.py, unable to reverse normalizations for target image as that info is not stored anywhere....
-
-# TODOs:
-# Add in pretrain configs for code/predict_vis.py, code/predict.py, and code/train.py

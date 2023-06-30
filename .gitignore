@@ -171,3 +171,5 @@ configs/download_planet_labs.yaml
 
 For_pretrain/*
 pre_train_code/*
+
+code/test.py

@@ -69,18 +69,19 @@ Make sure to check if you consider your split to be adequately distributed acros
 
 ## Reproduce results
 
+For each desired experiment, create a `*.yaml` configuration file that has the same variable declarations as in the provided example configuration `configs/base.yaml`. Ensure that when running each file, you point to the correct configuration file by using the `--config` argument. Note: Default configuration file is set to `configs/base.yaml`.
+
 1. Train
-
-In the configs folder, create a *.yaml file for your experiment. See base.yaml as a example. 
-
 
 ```bash
 python code/train.py --config configs/base.yaml
 ```
 
-This will create a trained model which is saved at each epoch in the checkpoints folder, `experiment_dir`. This folder contains model checkpoints, a copy of the configuration file used, and a copy of split info used during training. The path to this directory is declared in your configuration file.
+This will create a trained model which is saved at each epoch in the checkpoints folder, `experiment_dir`. This folder contains model checkpoints, a copy of the configuration file used, and a copy of split info used during training. The path to this directory is declared in your configuration file. Note: ENSURE `experiment_dir` IS UNIQUE FOR EACH EXPERIMENT AS TO NOT OVERWRITE PREVIOUSLY SAVED EXPERIMENTS.
 
 During training, weights and biases (wandb) is used to automatically generate visualizations of the training data and plot out the loss (MSE) of the training and validation sets. Wandb logs are generated and saved in the folder `code/wandb`. 
+
+If you would like to load in a previously trained model for further training, use `--load` followed by the path to the model (must be a `.pth` file). Also, specifiy how many epochs the model was trained for in the configuration file under `epochs_done`.
 
 2. Predictions and validation
 
