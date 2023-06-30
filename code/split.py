@@ -8,7 +8,9 @@
     2. The time when the tile was collected
     3. The general land cover type
 
-    Also make sure the number of tiles are approximately split according to your chosen proportions since each date and location combination can have very different numbers of tiles. 
+    Also make sure the number of tiles are approximately split according to your chosen proportions since each date and location combination can have very different numbers of tiles.
+
+    The file is also adapted to split pretraining data into splits. 
 
     2022 Anna Boser
 '''
