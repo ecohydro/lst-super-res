@@ -105,7 +105,6 @@ Once you are ready to test your model on your held out test set, run the followi
 
 ```bash
 python code/predict.py --config configs/base.yaml --split test
-python code/predict_vis.py --config configs/base.yaml --split test
 ```
 
 4. (Optional) Convert pretraining model to training model
@@ -131,7 +130,7 @@ This will produce `/RF/results.csv`, a CSV file that includes the file name, lan
 | ------------- | ------------- |
 | `code/dataset_class.py`  | This script creates the dataset class to read and process data to feed into the dataloader. The Dataset class is called for both model training and predicting in `code/train.py` and `code/predict.py` respectively.|
 | `code/evaluate.py`  | This script evaluates the validation score for each epoch during training. It is declared in `code/train.py`.|
-| `code/predict_vis.py`  | This script loads in either val or test data and creates predictions using the trained model of choice.These predictions are plotted and evaluated using MSE, SSIM, and R2_score metrics.|
+| `code/predict_vis.py`  | This script computes evaluation metrics and optionally saves PNG images for each prediction. These predictions are evaluated using MSE, SSIM, and R2_score metrics.|
 | `code/predict.py`  | This script performs predictions using the trained U-Net model on the validation set.  |
 | `code/RF.py`  | This script enhances coarsened LST images using a Random Forest regressor.  |
 | `code/split.py`  | This script will create a file that specifies the training/validation/test split for the data.  |
