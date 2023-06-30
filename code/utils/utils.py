@@ -267,8 +267,21 @@ def random_band_arithmetic(red_band: np.ndarray, green_band: np.ndarray, blue_ba
     result = Image.fromarray(result) # Convert np array to image object
     return result, random_mean, random_sd
 
-# Decides how to open image based on number of specified bands
-def load(filename, bands):
+def load(filename: str, bands: int) -> Image.Image:
+    """
+    Load an image from a file and return it as a PIL Image object. 
+    Try a couple of ways if necessary. 
+
+    Args:
+        filename (str): The path to the image file.
+        bands (int): The number of bands in the image.
+
+    Returns:
+        Image.Image: The loaded image as a PIL Image object.
+
+    Raises:
+        ValueError: If the image has an invalid number of bands or if loading the image fails.
+    """
     try:
         if bands == 1:
             return Image.open(filename)
