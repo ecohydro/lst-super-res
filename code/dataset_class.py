@@ -110,10 +110,6 @@ class BasicDataset(Dataset):
             output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False) - normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
         else:
             output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
-        # print('Dataloader Input Target min:', torch.min(input_target_im), flush = True)
-        # print('Dataloader Input Target max:', torch.max(input_target_im), flush = True)
-        # print('Dataloader Output Target min:', torch.min(output_target_im), flush = True)
-        # print('Dataloader Output Target max:', torch.max(output_target_im), flush = True)
         input_target = normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
         ib1, ib2, ib3 = normalize_basemap(input_basemap_im, self.basemap_norms, n_bands=3)
         output_target = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
@@ -149,11 +145,6 @@ class BasicDataset(Dataset):
             f'Target and basemap input {name} should be the same size, but are {input_target_im.size} and {input_basemap_im.size}'
         assert input_target_im.size == output_target_im.size, \
             f'Input and output {name} should be the same size, but are {input_target_im.size} and {output_target_im.size}'
-        
-        #print('Dataloader Input Target min:', name, np.nanmin(input_target_im), flush = True)
-        #print('Dataloader Input Target max:', name, np.nanmax(input_target_im), flush = True)
-        #print('Dataloader Output Target min:', name, np.nanmin(output_target_im), flush = True)
-        #print('Dataloader Output Target max:', name, np.nanmax(output_target_im), flush = True)
 
         input_target, output_target, input, output = self.preprocess(input_basemap_im, input_target_im, output_target_im, target_mean, target_sd)
         
