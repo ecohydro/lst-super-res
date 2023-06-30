@@ -18,22 +18,6 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from skimage import img_as_float
 from skimage.metrics import structural_similarity
 
-def plot_img_and_mask(img, mask):
-    classes = mask.shape[0] if len(mask.shape) > 2 else 1
-    fig, ax = plt.subplots(1, classes + 1)
-    ax[0].set_title('Input image')
-    ax[0].imshow(img)
-    if classes > 1:
-        for i in range(classes):
-            ax[i + 1].set_title(f'Output mask (class {i + 1})')
-            ax[i + 1].imshow(mask[i, :, :])
-    else:
-        ax[1].set_title(f'Output mask')
-        ax[1].imshow(mask)
-    plt.xticks([]), plt.yticks([])
-    plt.show()
-
-
 def normalize_target(target_im, target_mean, target_sd, mean_for_nans=True):
 
     target_im[target_im<=-3.4e+30] = float('nan')      # -3.4e+38 to NaN
