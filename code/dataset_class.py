@@ -38,29 +38,32 @@ from utils.utils import coarsen_image
 class BasicDataset(Dataset):
     def __init__(self, cfg, split, predict="False"):
 
-        self.pretrain = cfg['pretrain']
+        self.pretrain = cfg['pretrain'] # if this is set to true, the dataloader will create its own target input and output based on the provided basemaps
         self.toTensor = ToTensor()
-        self.predict = predict
-        self.split = split
-        self.seed = cfg['Seed']
+        self.predict = predict # are you using this dataloader to create predictions or to train the model? If you are training, data augmentations such as flipping and rotating will be used. 
+        self.split = split # do you want to make a loader for the train, val, or test split, as determined by your splits file at the location described in the configs? 
+        self.seed = cfg['Seed'] # theoretically, this should make the random functions do the same thing every time, but I'm not sure that it's working. 
 
         self.transform = A.Compose([
                 A.HorizontalFlip(p=cfg['HorizontalFlip']),
                 A.VerticalFlip(p=cfg['VerticalFlip']),
                 A.RandomRotate90(p=cfg['RandomRotate90'])
-            ])
-        self.residual = cfg['Residual']
-        self.upsample_scale = cfg['upsample_scale']
+            ]) # this is the transformation that will be used in training (will not be used for predictions)
         
-        if self.pretrain == True:
+        self.residual = cfg['Residual'] # is your model supposed to predict the difference between the coarse and high resolution image (residual) or simply predict the high resolution image? 
+        self.upsample_scale = cfg['upsample_scale'] # factor by which to super-resolve (if coarsening is being done within the dataloader -- this necessarily happens in pretraining)
+        
+        if self.pretrain == True: # if you are pretraining, find files at these locations
+            # data paths
             self.basemap_norm_loc = Path(cfg['pretrain_basemap_norm_loc'])
             self.input_basemap = Path(cfg['pretrain_basemap'])
             self.splits_loc = cfg['pretrain_splits_loc']
 
+            # check that basemaps are in the indicated directory
             if not [file for file in listdir(self.input_basemap) if not file.startswith('.')]:
                 raise RuntimeError(f'No input file found in {self.input_basemap}, make sure you put your images there')
 
-        else:
+        else: # if you are doing regular training and not pretrainig, find files at these locations
             # data paths
             self.input_target = Path(cfg['input_target'])
             self.input_basemap = Path(cfg['input_basemap'])
@@ -69,7 +72,6 @@ class BasicDataset(Dataset):
             self.basemap_norm_loc = Path(cfg['basemap_norm_loc'])
             self.splits_loc = cfg['splits_loc'] # location to split file to indicate which tile belongs to which split
             self.coarsen_data = cfg['coarsen_data']
-
 
             # check that images are in the given directories
             if not [file for file in listdir(self.input_basemap) if not file.startswith('.')]:
@@ -82,14 +84,20 @@ class BasicDataset(Dataset):
             # normalization factors for preprocessing
             self.target_norms = pd.read_csv(self.target_norm_loc, delim_whitespace=True)
 
+        # in order to make sure the basemaps aren't large numbers that are difficult to handle, 
+        # we normalize them based on the average first and second moments we see on a sample of basemaps. 
+        # These moments are stored at self.basemap_norm_loc, and we calculate the averages here. 
         self.basemap_norms = pd.read_csv(self.basemap_norm_loc, delim_whitespace=True).mean()
 
-        split_files = [file for file in os.listdir(self.splits_loc) if file.endswith(".csv")]
+        # retrieve the information on which files are part of this split
+        split_files = [file for file in os.listdir(self.splits_loc) if file.endswith(".csv")] # list out all of the different splits found in the splits_loc directory
         recent_split = sorted(split_files, key=lambda fn:os.path.getctime(os.path.join(self.splits_loc, fn)))[-1] # get most recent split
         split_file = pd.read_csv(os.path.join(self.splits_loc, recent_split))
 
+        # get the ids of tiles in this split
         self.ids = [splitext(file)[0] for file in split_file[split_file['split'] == self.split]['tiles']]
 
+        # keep a copy of the information about the splits since this also has other metadata on the images. 
         self.split_file = split_file # use this later when you get the main landcover of a tile
 
         logging.info(f'Creating dataset with {len(self.ids)} examples')
