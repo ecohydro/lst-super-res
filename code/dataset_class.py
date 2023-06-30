@@ -32,11 +32,16 @@ from utils.utils import random_band_arithmetic
 from utils.utils import load
 from utils.utils import coarsen_image
 
-
-# dataset class
-
 class BasicDataset(Dataset):
-    def __init__(self, cfg, split, predict="False"):
+    """Dataset class for image data.
+
+    Args:
+        cfg (dict): Configuration dictionary.
+        split (str): Split type ("train", "val", "test").
+        predict (bool, optional): Flag indicating if the dataset is used for prediction. Defaults to False.
+    """
+    
+    def __init__(self, cfg: dict, split: str, predict: bool = False):
 
         self.pretrain = cfg['pretrain'] # if this is set to true, the dataloader will create its own target input and output based on the provided basemaps
         self.toTensor = ToTensor()
@@ -102,12 +107,27 @@ class BasicDataset(Dataset):
 
         logging.info(f'Creating dataset with {len(self.ids)} examples')
 
-    # Counts how many images are in this specified split
-    def __len__(self):
+    def __len__(self) -> int:
+        """Return the number of images in the dataset (specifically this split)."""
         return len(self.ids)
 
-    # Preprocess when given LST data or other input
     def preprocess(self, input_basemap_im, input_target_im, output_target_im, target_mean, target_sd):
+        """Preprocess the input and output images.
+
+        Args:
+            input_basemap_im (Image.Image): Input basemap image.
+            input_target_im (Image.Image): Input target image.
+            output_target_im (Image.Image): Output target image.
+            target_mean (float): Target mean for normalization.
+            target_sd (float): Target standard deviation for normalization.
+
+        Returns:
+            torch.Tensor: Preprocessed input target image.
+            torch.Tensor: Preprocessed output target image.
+            torch.Tensor: Preprocessed input image.
+            torch.Tensor: Preprocessed output image.
+        """
+        
         # turn basemap and target into tensors
         input_basemap_im = self.toTensor(input_basemap_im)*255 # the default is 0 to 255 turned into 0 to 1 -- override this since I'm doing my own normalizations
         input_target_im = self.toTensor(input_target_im) # no conversion. NA is -3.4e+38
@@ -126,7 +146,16 @@ class BasicDataset(Dataset):
         input = torch.cat([input_target, ib1, ib2, ib3], dim=0)
 
         return input_target, output_target, input, output
-    def __getitem__(self, idx):
+        
+    def __getitem__(self, idx: int) -> dict:
+        """Get an item from the dataset at the specified index.
+
+        Args:
+            idx (int): Index of the item.
+
+        Returns:
+            dict: Dictionary containing the input and output images, labels, and other metadata.
+        """
         name = self.ids[idx]
         input_basemap_im = list(self.input_basemap.glob(name + '.tif*'))
         assert len(input_basemap_im) == 1, f'Either no basemap input or multiple basemap inputs found for the ID {name}: {input_basemap_im}'
