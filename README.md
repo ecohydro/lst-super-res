@@ -43,7 +43,7 @@ _Note:_ It is OK to have NA values in the input and output target, but not in yo
 
 4. Split data
 
-To create a data split, you will need to have your data available in the location specified in your configs file and your metadata file, `data_root/metadata.csv`, which will be used to ensure your splits are even across different variables. 
+To create a data split, you will need to have your data available in the location specified in your configs file and your metadata file, `data_root/runs_metadata.csv`, which will be used to ensure your splits are even across different variables. 
 
 _Note:_ If `pretrain` is set to `True` in your configuration file, the metadata information should be stored as a CSV file under `data_root/pretrain_metadata.csv`. The output folder will be `data_root/metadata/pretrain_splits`.
 
