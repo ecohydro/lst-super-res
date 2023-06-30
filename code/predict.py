@@ -8,6 +8,7 @@ import logging
 import os
 import time
 from tkinter import image_types
+import random
 
 import numpy as np
 import torch
@@ -18,26 +19,35 @@ from dataset_class import BasicDataset
 from unet import UNet
 
 from utils.utils import unnormalize_target
+from utils.utils import load
 import yaml
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import pandas as pd
 from pathlib import Path
 
+from predict_vis import predict_vis
+
 def predict_img(net,
                 dataloader,
                 device, 
-                target_norms,
                 basemap_norms, 
                 predictions_dir,
-                residual):
+                residual,
+                visualize,
+                input_basemap,
+                split,
+                experiment_dir):
 
     net.eval()
     num_val_batches = len(dataloader)
 
-    # iterate over the validation set
+    # Initialize metrics data frame to store all metric info
+    metrics_df = pd.DataFrame(columns=['file', 'landcover', 'r2_pred', 'mse_pred', 'mae_pred','ssim_pred','r2_coarse', 'mse_coarse', 'mae_coarse', 'ssim_coarse'])
+
+    # iterate over chosen split set
     for batch in tqdm(dataloader, total=num_val_batches, desc='Making predictions', unit='batch', leave=False):
-        image, name, target_input = batch['image'], batch['name'], batch['input_target']
+        image, name, target_input, name, landcover = batch['image'], batch['name'], batch['input_target'], batch['name'], batch['landcover']
         # move images and labels to correct device and type
         image = image.to(device=device, dtype=torch.float32)
         target_input = target_input.to(device=device, dtype=torch.float32)
@@ -53,22 +63,51 @@ def predict_img(net,
                 # if we are calculating original values keep unnormalize_target
                 # else if we are calculating residuals, add to coarse array
                 if residual:
-                    output = unnormalize_target(target_input+output, target_norms) # image is a float 32 torch
+                    output = unnormalize_target(target_input+output, batch['target_mean'], batch['target_sd']) # image is a float 32 torch
                 else:
-                    output = unnormalize_target(output, target_norms)
+                    output = unnormalize_target(output, batch['target_mean'], batch['target_sd'])
 
-                # un-tensorify
+                # un-tensorify ouput prediction image
                 output = output.cpu().numpy()
                 output = output.squeeze()
-                output = Image.fromarray(output)
+                output_image = Image.fromarray(output)
 
                 # save prediction
                 out_filename = os.path.join(predictions_dir, name[i] + ".tif")
-                output.save(out_filename)
+                output_image.save(out_filename)
 
                 logging.info(f'Predictions saved to {out_filename}')
 
+                # call input and ground truth label for evaluating metrics
+                input_target = unnormalize_target(batch['input_target'], batch['target_mean'], batch['target_sd'])
+                input_target = input_target.cpu().numpy()
+                input_target = input_target.squeeze()
+
+                label = unnormalize_target(batch['output_target'], batch['target_mean'], batch['target_sd'])
+                label = label.cpu().numpy()
+                label = label.squeeze()
+
+                # Masking for normal training
+                if not pretrain:
+                    mask = ground_truth < 0
+                    output[mask] = np.nan
+                    label[mask] = np.nan
+                    coarse[mask] = np.nan
+
+                # Compute and save input target and prediction metrics as a .csv file
+                pred_metrics = predict_vis(output, input_target, label, name, landcover, split, input_basemap, visualize, experiment_dir)
+
+                # Append prediction metric to base data frame
+                metrics_df = metrics_df.append(pred_metrics, ignore_index = True)
+
+        # save the pandas dataframe of evaluation metrics as csv
+        os.makedirs(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split)), exist_ok = True)
+        metrics_df.to_csv(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split), "prediction_metrics.csv"))
+
+        # Save the average metrics for entire dataset
+        metrics_df.mean().to_csv(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split), "prediction_metrics_mean.csv"))
     return 
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
@@ -86,8 +125,11 @@ if __name__ == '__main__':
     print(f'Using config "{args.config}"')
     cfg = yaml.safe_load(open(args.config, 'r'))
     loader_args = dict(batch_size=1, num_workers=8, pin_memory=True)
-
+    
     print(f'Using Args: "{args.split}"')
+
+    random.seed(cfg['Seed'])
+
     val_set = BasicDataset(cfg, args.split, predict="True")
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
@@ -111,14 +153,19 @@ if __name__ == '__main__':
     predictions_dir = os.path.join(cfg['experiment_dir'], 'predictions', str(args.split))
     os.makedirs(predictions_dir, exist_ok=True)
 
-    # get the normalizations to put the outputs back in their native format
-    target_norm_loc=Path(cfg['target_norm_loc'])
-    target_norms = pd.read_csv(target_norm_loc, delim_whitespace=True).mean()
-    basemap_norm_loc =Path(cfg['basemap_norm_loc'])
+    pretrain = cfg['pretrain']
+    if pretrain:
+        basemap_norm_loc = Path(cfg['pretrain_basemap_norm_loc'])
+        input_basemap = cfg["pretrain_basemap"]
+    else:
+        basemap_norm_loc = Path(cfg['basemap_norm_loc'])
+        input_basemap = cfg["input_basemap"]
     basemap_norms = pd.read_csv(basemap_norm_loc, delim_whitespace=True).mean()
     # See if we calculate the residual instead
     residual = cfg['Residual']
+    # Option to visualize each individual observation
+    visualize = cfg['visualize']
     start = time.time()
-    predict_img(net, val_loader, device, target_norms, basemap_norms, predictions_dir, residual)
+    predict_img(net, val_loader, device, basemap_norms, predictions_dir, residual, visualize, input_basemap, args.split, cfg['experiment_dir'])
     end = time.time()-start
-    print(end)
+    print('Total prediction time:', end)

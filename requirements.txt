@@ -8,12 +8,14 @@ tqdm==4.62.3
 
 pandas==1.4.3
 
+tifffile==2022.8.12
+
 # from Pytorch_UNet
 matplotlib
 Pillow
 tqdm
 wandb
-
+scikit-image
 albumentations
 
 jupyterlab

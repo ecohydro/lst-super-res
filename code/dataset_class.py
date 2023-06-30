@@ -24,10 +24,14 @@ import albumentations as A
 import skimage
 import scipy.ndimage
 from scipy import stats
+import tifffile
 
 from utils.utils import normalize_target
 from utils.utils import normalize_basemap
-from utils.utils import normalize_pretrain
+from utils.utils import random_band_arithmetic
+from utils.utils import load
+from utils.utils import coarsen_image
+
 
 # dataset class
 
@@ -46,6 +50,7 @@ class BasicDataset(Dataset):
                 A.RandomRotate90(p=cfg['RandomRotate90'])
             ])
         self.residual = cfg['Residual']
+        self.upsample_scale = cfg['upsample_scale']
         
         if self.pretrain == True:
             self.basemap_norm_loc = Path(cfg['pretrain_basemap_norm_loc'])
@@ -63,6 +68,7 @@ class BasicDataset(Dataset):
             self.target_norm_loc = Path(cfg['target_norm_loc'])
             self.basemap_norm_loc = Path(cfg['basemap_norm_loc'])
             self.splits_loc = cfg['splits_loc'] # location to split file to indicate which tile belongs to which split
+            self.coarsen_data = cfg['coarsen_data']
 
 
             # check that images are in the given directories
@@ -74,7 +80,7 @@ class BasicDataset(Dataset):
                 raise RuntimeError(f'No input file found in {self.output_target}, make sure you put your images there')
 
             # normalization factors for preprocessing
-            self.target_norms = pd.read_csv(self.target_norm_loc, delim_whitespace=True).mean()
+            self.target_norms = pd.read_csv(self.target_norm_loc, delim_whitespace=True)
 
         self.basemap_norms = pd.read_csv(self.basemap_norm_loc, delim_whitespace=True).mean()
 
@@ -93,7 +99,7 @@ class BasicDataset(Dataset):
         return len(self.ids)
 
     # Preprocess when given LST data or other input
-    def preprocess(self, input_basemap_im, input_target_im, output_target_im, pretrain_mean = None, pretrain_sd = None):
+    def preprocess(self, input_basemap_im, input_target_im, output_target_im, target_mean, target_sd):
         # turn basemap and target into tensors
         input_basemap_im = self.toTensor(input_basemap_im)*255 # the default is 0 to 255 turned into 0 to 1 -- override this since I'm doing my own normalizations
         input_target_im = self.toTensor(input_target_im) # no conversion. NA is -3.4e+38
@@ -101,77 +107,46 @@ class BasicDataset(Dataset):
 
         # if statement here based on if we want to train on the residual of the images
         if self.residual:
-            if self.pretrain:
-                output = normalize_pretrain(output_target_im, pretrain_mean, pretrain_sd, mean_for_nans=False) - normalize_pretrain(input_target_im,pretrain_mean, pretrain_sd, mean_for_nans=True)
-            else:
-                output = normalize_target(output_target_im, self.target_norms, mean_for_nans=False) - normalize_target(input_target_im, self.target_norms, mean_for_nans=True)
+            output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False) - normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
         else:
-            if self.pretrain:
-                output = normalize_pretrain(output_target_im, pretrain_mean, pretrain_sd, mean_for_nans=False)
-            else:
-                output = normalize_target(output_target_im, self.target_norms, mean_for_nans=False)
-        
-        if self.pretrain:
-            input_target = normalize_pretrain(input_target_im, pretrain_mean, pretrain_sd, mean_for_nans=True)
-        else:
-            input_target = normalize_target(input_target_im, self.target_norms, mean_for_nans=True)
+            output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
+        input_target = normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
         ib1, ib2, ib3 = normalize_basemap(input_basemap_im, self.basemap_norms, n_bands=3)
+        output_target = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
 
         input = torch.cat([input_target, ib1, ib2, ib3], dim=0)
 
-        return input_target, input, output
-    # Decides how to open image based on number of specified bands
-    @staticmethod
-    def load(filename, bands):
-        if bands == 1:
-            return Image.open(filename)
-        elif bands == 3:
-                return Image.open(filename).convert('RGB')
-        else: 
-            raise Exception('Image must be one or three bands')
-    @staticmethod
-    def coarsen(image, downsample = 8):
-        # first, change to 0-1
-        ds_array = np.array(image)/255
-        # Downsample
-        downsample_im = skimage.measure.block_reduce(ds_array,
-                                (downsample, downsample),
-                                np.mean)
-        # Resample by a factor of 8 with bilinear interpolation
-        coarsened_array = Image.fromarray(scipy.ndimage.zoom(downsample_im, 8, order=1))
-        return coarsened_array
-
+        return input_target, output_target, input, output
     def __getitem__(self, idx):
         name = self.ids[idx]
         input_basemap_im = list(self.input_basemap.glob(name + '.tif*'))
         assert len(input_basemap_im) == 1, f'Either no basemap input or multiple basemap inputs found for the ID {name}: {input_basemap_im}'
         if self.pretrain == True:
-            input_basemap_im = self.load(input_basemap_im[0], bands = 3)
+            input_basemap_im = load(input_basemap_im[0], bands = 3)
             input_basemap_np = np.asarray(input_basemap_im, dtype=np.float32)
-            r = input_basemap_np[:,:,0] + 1
-            g = input_basemap_np[:,:,1] + 1
-            b = input_basemap_np[:,:,2] + 1
-            output_target_im, target_mean, target_sd = self.randomize(r,g,b, seed = self.seed)
-            input_target_im = self.coarsen(output_target_im)
+            r = input_basemap_np[:,:,0]
+            g = input_basemap_np[:,:,1]
+            b = input_basemap_np[:,:,2]
+            output_target_im, target_mean, target_sd = random_band_arithmetic(r,g,b,seed = self.seed)
+            input_target_im = coarsen_image(output_target_im, self.upsample_scale)
         else:
             input_target_im = list(self.input_target.glob(name + '.tif*'))
             output_target_im = list(self.output_target.glob(name + '.tif*'))
 
             assert len(input_target_im) == 1, f'Either no target input or multiple target inputs found for the ID {name}: {input_target_im}'
             assert len(output_target_im) == 1, f'Either no target output or multiple target outputs found for the ID {name}: {output_target_im}'
-            input_basemap_im = self.load(input_basemap_im[0], bands = 3)
-            input_target_im = self.load(input_target_im[0], bands = 1)
-            output_target_im = self.load(output_target_im[0], bands = 1)
+            input_basemap_im = load(input_basemap_im[0], bands = 3)
+            input_target_im = load(input_target_im[0], bands = 1)
+            output_target_im = load(output_target_im[0], bands = 1)
+            target_mean = self.target_norms[self.target_norms['file'] == (name + '.tif')]['mean'].mean()
+            target_sd = self.target_norms[self.target_norms['file'] == (name + '.tif')]['sd'].mean()
 
         assert input_basemap_im.size == input_target_im.size, \
             f'Target and basemap input {name} should be the same size, but are {input_target_im.size} and {input_basemap_im.size}'
         assert input_target_im.size == output_target_im.size, \
             f'Input and output {name} should be the same size, but are {input_target_im.size} and {output_target_im.size}'
 
-        if self.pretrain == True:
-            input_target, input, output = self.preprocess(input_basemap_im, input_target_im, output_target_im, target_mean, target_sd)
-        else:
-            input_target, input, output = self.preprocess(input_basemap_im, input_target_im, output_target_im)
+        input_target, output_target, input, output = self.preprocess(input_basemap_im, input_target_im, output_target_im, target_mean, target_sd)
         
         if self.split == "train":
             if self.predict == "False": # Removes random flipping/augmentation in predict.py
@@ -183,18 +158,15 @@ class BasicDataset(Dataset):
         # also get the main class of this particular image
         landcover = self.split_file[self.split_file['tiles'] == name + ".tif"]["Main Cover"]._values[0]
 
-        #print(input)
-        #print(input_target)
-        #print(output)
-        #print(name, flush = True)
-        #print(landcover)
-
         return {
             'image': input, # 4 channel input: low res, RGB
-            'input_target': input_target, # 1 channel low res
-            'label': output, # 1 channel high res
+            'input_target': input_target, # 1 channel low res, normalized 
+            'output_target': output_target, # 1 channel high res, normalized
+            'label': output, # 1 channel high res Note: either output_target OR output_target - input_target (if model trains on residual)
             'name': name, # image title
-            'landcover': landcover # landcover type
+            'landcover': landcover, # landcover type
+            'target_mean': target_mean, # target mean
+            'target_sd': target_sd, # target standard deviation
         }
 
 
