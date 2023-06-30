@@ -150,6 +150,8 @@ def unnormalize_image(normalized_image, basemap_norms, target_norms, n_bands = 3
 
     return (torch.cat([target_im,input_1,input_2,input_3], dim=0)).int()
 
+# This was the original random_band_arithmetic function -- can be deleted if random_band_arithmetic works fine. 
+
 # def randomize(r,g,b, seed = 1234):
 #     # Set seed
 #     random.seed(seed)
@@ -214,7 +216,20 @@ def unnormalize_image(normalized_image, basemap_norms, target_norms, n_bands = 3
 #     return randomized_image, random_mean, random_sd # Returns randomized output including its mean and standard deviation
 
 
-def random_band_arithmetic(red_band, green_band, blue_band, seed = 1234):
+def random_band_arithmetic(red_band: np.ndarray, green_band: np.ndarray, blue_band: np.ndarray,
+                           seed: int = 1234) -> Tuple[Image.Image, float, float]:
+    """
+    Perform random arithmetic operations on the input bands and return the result along with its mean and standard deviation.
+
+    Args:
+        red_band (np.ndarray): The red band.
+        green_band (np.ndarray): The green band.
+        blue_band (np.ndarray): The blue band.
+        seed (int, optional): The seed value for random number generation. Defaults to 1234.
+
+    Returns:
+        Tuple[Image.Image, float, float]: A tuple containing the resulting image, mean, and standard deviation.
+    """
     random.seed(seed)
     # Randomly choose the number of arithmetic operations to perform
     num_operations = np.random.randint(1, 4)  # Choose a random integer from 1 to 4
