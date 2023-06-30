@@ -41,101 +41,7 @@ The location of some metadata must also be included in your configs file:
 
 _Note:_ It is OK to have NA values in the input and output target, but not in your basemaps. There is built-in functionality to ignore areas where there is no information for the target: input NAs are set to 0 and output NAs are ignored when calculating the loss.
 
-4. Split data
-
-To create a data split, you will need to have your data available in the location specified in your configs file and your metadata file, `data_root/runs_metadata.csv`, which will be used to ensure your splits are even across different variables. 
-
-_Note:_ If `pretrain` is set to `True` in your configuration file, the metadata information should be stored as a CSV file under `data_root/pretrain_metadata.csv`. The output folder will be `data_root/metadata/pretrain_splits`.
-
-```bash
-python3 code/split.py --config configs/base.yaml
-```
-
-This will create `data_root/metadata/splits`, a folder containing a CSV file that indicates which observation belongs to each split and a TXT file that provides additional information regarding the split. Note that `data_root` is declared in your specified configuration file.
-
-Make sure to check if you consider your split to be adequately distributed across the variables of interest specified in your metadata file. 
-
-## Reproduce results
-
-1. Train
-
-In the configs folder, create a *.yaml file for your experiment. See base.yaml as a example. 
-
-Input:  
-
-`--config`: Path to the desired configuration file.  
-
-Output:  
-
-`experiment_dir`: A folder containing model checkpoints, a copy of the configuration file used, and a copy of split info used during training. Path specification is declared in your configuration file.
-
-```bash
-python code/train.py --config configs/base.yaml
-```
-
-This will create a trained model which is saved at each epoch in the checkpoints folder.
-
-2. Predictions and validation
-
-During training, weights and biases (wandb) is used to automatically generate visualizations of the training data and plot out the loss (MSE) of the training and validation sets. Wandb logs are generated and saved in the folder `code/wandb`. 
-
-Generate predictions. These will be saved in the predictions folder of your experiment. If predictions are desired for another split, you can also specify 'test' or 'train'. 
-
-Input:  
-
-`--config`: Path to the desired configuration file.  
-
-`--split`: Specifies the dataset split to be used for predicting target labels.
-
-Output:  
-
-`experiment_dir/predictions`: A folder containing all predicted target images separated by split
-
-```bash
-python code/predict.py --config configs/base.yaml --split train
-python code/predict.py --config configs/base.yaml --split val
-```
-
-Then, visualize and calcualte metrics for your predictions. These are also saved in your experiments folder. 
-
-Input:  
-
-`--config`: Path to the desired configuration file.  
-
-`--split`: Specifies the dataset split to be used for visualizing predicted target labels.
-
-Output:  
-
-`experiment_dir/prediction_metrics`: A folder containing a CSV file that includes evaluation metrics (R2, SSIM, MSE) for each prediction separated by split
-
-`experiment_dir/prediction_plots`: A folder containing PNG files that includes the basemap image, coarsened target image, predicted target image, and ground truth image for each prediction separated by split. Also shows image name, landcover type, prediction metrics and coarsened input metrics.
-
-```bash
-python code/predict_vis.py --config configs/base.yaml --split train
-python code/predict_vis.py --config configs/base.yaml --split val
-```
-
-3. Test/inference
-
-Input:  
-
-`--config`: Path to the desired configuration file.  
-
-`--split`: Specifies the dataset split to be used for predicting target labels and prediction visualization.
-
-Output:  
-
-`/RF/results.csv`: A CSV file that includes the file name, landcover type, as well as the R2 and RMSE values.
-
-```bash
-python code/predict.py --config configs/base.yaml --split test
-python code/predict_vis.py --config configs/base.yaml --split test
-```
-
-
-1. Add data
-
-Similar to section `3. Add data` of the installation instructions, the following paths and other configurations must be specified in the configs/*.yaml file:
+If you are interested in pre-training your model, you will need to provide the following paths and other configurations must be specified in the configs/*.yaml file (or instead, if you are only doing pretraining):
 
 - `pretrain`: This is a boolean value that when set to `TRUE`, tells the model to perform pre-training.
 
@@ -147,27 +53,77 @@ Similar to section `3. Add data` of the installation instructions, the following
 
 The metadata on these high resolution RGB images which includes information on their land cover type, `pretrain_metadata.csv` should be stored in a folder named "metadata" which is within your `data_root` as specified in your configs file.
 
+4. Split data
+
+To create a data split, you will need to have your data available in the location specified in your configs file and your metadata file, `data_root/runs_metadata.csv`, which will be used to ensure your splits are even across different variables. 
+
+_Note:_ If `pretrain` is set to `True` in your configuration file, the metadata information should be stored as a CSV file under `data_root/pretrain_metadata.csv`. The output folder will be `data_root/metadata/pretrain_splits`.
+
+```bash
+python3 code/split.py --config configs/base.yaml
+```
+
+This will create `data_root/metadata/splits`, a folder containing a CSV file that indicates which observation belongs to each split and a .txt file that provides additional information regarding the split. Note that `data_root` is declared in your specified configuration file.
+
+Make sure to check if you consider your split to be adequately distributed across the variables of interest specified in your metadata file. 
+
+## Reproduce results
+
+1. Train
+
+In the configs folder, create a *.yaml file for your experiment. See base.yaml as a example. 
+
+
+```bash
+python code/train.py --config configs/base.yaml
+```
+
+This will create a trained model which is saved at each epoch in the checkpoints folder, `experiment_dir`. This folder contains model checkpoints, a copy of the configuration file used, and a copy of split info used during training. The path to this directory is declared in your configuration file.
+
+During training, weights and biases (wandb) is used to automatically generate visualizations of the training data and plot out the loss (MSE) of the training and validation sets. Wandb logs are generated and saved in the folder `code/wandb`. 
+
+2. Predictions and validation
+
+Generate predictions. These will be saved in the predictions folder of your experiment. If predictions are desired for another split, you can also specify 'test' or 'train'. 
+
+```bash
+python code/predict.py --config configs/base.yaml --split train
+python code/predict.py --config configs/base.yaml --split val
+```
+This will create `experiment_dir/predictions`, a folder containing all predicted target images separated by split. 
+
+Then, visualize and calcualte metrics for your predictions. 
+
+```bash
+python code/predict_vis.py --config configs/base.yaml --split train
+python code/predict_vis.py --config configs/base.yaml --split val
+```
+
+This will create the following folders and files: 
+`experiment_dir/prediction_metrics`: A folder containing a CSV file that includes evaluation metrics (R2, SSIM, MSE) for each prediction separated by split
+
+`experiment_dir/prediction_plots`: A folder containing PNG files that includes the basemap image, coarsened target image, predicted target image, and ground truth image for each prediction separated by split. Also shows image name, landcover type, prediction metrics and coarsened input metrics.
+
+3. Test/inference
+
+Once you are ready to test your model on your held out test set, run the following: 
+
+```bash
+python code/predict.py --config configs/base.yaml --split test
+python code/predict_vis.py --config configs/base.yaml --split test
+```
+
 ## Random Forest Regressor Model
 
-The random forest regressor model, which represents the current state-of-the-art approach for enhancing the resolution of land surface temperature images, employs a statistical pixel-based technique. In order to evaluate its performance against our custom U-Net model, we employ the random forest regressor.
-
-Input:  
-
-`--config`: Path to the desired configuration file.  
-
-`--split`: Specifies the dataset split to be used for the random forest regressor.
-
-Output:  
-
-`/RF/results.csv`: A CSV file that includes the file name, landcover type, as well as the R2 and RMSE values.
-
-Reproduce Results:
+The random forest regressor model, which represents the state-of-the-art approach prior to the U-Net model we implement for enhancing the resolution of land surface temperature images, employs a statistical pixel-based technique. In order to evaluate its performance against our custom U-Net model, we employ the random forest regressor.
 
 ```bash
 python code/RF.py --config configs/base.yaml --split train
 python code/RF.py --config configs/base.yaml --split val
 python code/RF.py --config configs/base.yaml --split test
 ```
+
+This will produce `/RF/results.csv`, a CSV file that includes the file name, landcover type, as well as the R2 and RMSE values.
 
 
 ## File Table
