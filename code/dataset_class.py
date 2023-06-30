@@ -118,8 +118,9 @@ class BasicDataset(Dataset):
             output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False) - normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
         else:
             output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
+            
         input_target = normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
-        ib1, ib2, ib3 = normalize_basemap(input_basemap_im, self.basemap_norms, n_bands=3)
+        ib1, ib2, ib3 = normalize_basemap(input_basemap_im, self.basemap_norms, n_bands=3) # normalize the basemap based on the normalizations set in the class initialization
         output_target = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
 
         input = torch.cat([input_target, ib1, ib2, ib3], dim=0)
