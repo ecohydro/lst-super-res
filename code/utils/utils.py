@@ -61,7 +61,18 @@ def unnormalize_target(target_im: Tensor, target_mean: float, target_sd: float) 
     return target_im
 
 
-def normalize_basemap(basemap_im, basemap_norms, n_bands=3):
+def normalize_basemap(basemap_im: Tensor, basemap_norms: dict, n_bands: int = 3) -> Tuple[Tensor, Tensor, Tensor]:
+    """
+    Normalize the basemap image tensor based on the provided mean and standard deviation.
+
+    Args:
+        basemap_im (Tensor): The basemap image tensor to normalize.
+        basemap_norms (dict): A dictionary containing the mean and standard deviation values for each band.
+        n_bands (int, optional): The number of bands in the basemap. Defaults to 3.
+
+    Returns:
+        Tuple[Tensor, Tensor, Tensor]: The normalized image tensors for each band.
+    """
 
     assert n_bands == 3, \
         'Currently only basemaps with three bands are supported.'
@@ -81,7 +92,18 @@ def normalize_basemap(basemap_im, basemap_norms, n_bands=3):
 
     return input_1, input_2, input_3
 
-def unnormalize_basemap(basemap_im, basemap_norms, n_bands=3):
+def unnormalize_basemap(basemap_im: Tensor, basemap_norms: dict, n_bands: int = 3) -> Tensor:
+    """
+    Unnormalize the basemap image tensor based on the provided mean and standard deviation.
+
+    Args:
+        basemap_im (Tensor): The basemap image tensor to unnormalize.
+        basemap_norms (dict): A dictionary containing the mean and standard deviation values for each band.
+        n_bands (int, optional): The number of bands in the basemap. Defaults to 3.
+
+    Returns:
+        Tensor: The unnormalized basemap image tensor.
+    """
 
     assert n_bands == 3, \
         'Currently only basemaps with three bands are supported.'
