@@ -1,6 +1,7 @@
 '''
-    This script performs predictions using the trained UNet model on the validation set.
-
+    This script performs predictions using the trained UNet model and computes evaluation metrics (R2, RMSE, SSIM scores) on desired split. 
+    Optionally, can generate visualization plots for each prediction.
+    
     2022 Anna Boser
 '''
 import argparse
@@ -116,6 +117,7 @@ def get_args():
                         help='Specify the file in which the model is stored')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
     parser.add_argument('--split', default='val', help='The split to make predictions for (train, val, or test)')
+    parser.add_argument('--visualize', default=True, help='Visualize plots for each prediction')
 
     return parser.parse_args()
 
@@ -163,9 +165,7 @@ if __name__ == '__main__':
     basemap_norms = pd.read_csv(basemap_norm_loc, delim_whitespace=True).mean()
     # See if we calculate the residual instead
     residual = cfg['Residual']
-    # Option to visualize each individual observation
-    visualize = cfg['visualize']
     start = time.time()
-    predict_img(net, val_loader, device, basemap_norms, predictions_dir, residual, visualize, input_basemap, args.split, cfg['experiment_dir'])
+    predict_img(net, val_loader, device, basemap_norms, predictions_dir, residual, args.visualize, input_basemap, args.split, cfg['experiment_dir'])
     end = time.time()-start
     print('Total prediction time:', end)

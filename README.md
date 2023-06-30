@@ -111,6 +111,10 @@ python code/predict.py --config configs/base.yaml --split test
 
 Repeat Steps 1-3 once again, but during Step 1, use `--load` followed by the path to the pretrained model (must be a `.pth` file).
 
+```bash
+python code/train.py --config configs/base.yaml --load path/to/pretrained/model.pth
+```
+
 ## Random Forest Regressor Model
 
 The random forest regressor model, which represents the state-of-the-art approach prior to the U-Net model we implement for enhancing the resolution of land surface temperature images, employs a statistical pixel-based technique. In order to evaluate its performance against our custom U-Net model, we employ the random forest regressor.
@@ -130,8 +134,8 @@ This will produce `/RF/results.csv`, a CSV file that includes the file name, lan
 | ------------- | ------------- |
 | `code/dataset_class.py`  | This script creates the dataset class to read and process data to feed into the dataloader. The Dataset class is called for both model training and predicting in `code/train.py` and `code/predict.py` respectively.|
 | `code/evaluate.py`  | This script evaluates the validation score for each epoch during training. It is declared in `code/train.py`.|
-| `code/predict_vis.py`  | This script computes evaluation metrics and optionally saves PNG images for each prediction. These predictions are evaluated using MSE, SSIM, and R2_score metrics.|
-| `code/predict.py`  | This script performs predictions using the trained U-Net model on the validation set.  |
+| `code/predict_vis.py`  | This script contains functions for all evaluation metrics and creating PNG images for each prediction. These predictions are evaluated using MSE, SSIM, and R2_score metrics.|
+| `code/predict.py`  | This script performs predictions using the trained UNet model and computes evaluation metrics (R2, RMSE, SSIM scores) on desired split. Optionally, can generate visualization plots for each prediction.  |
 | `code/RF.py`  | This script enhances coarsened LST images using a Random Forest regressor.  |
 | `code/split.py`  | This script will create a file that specifies the training/validation/test split for the data.  |
 | `code/train.py`  | This script trains a U-Net model given 3 channel basemap images and 1 channel coarsened target image to predict a 1 channel high resolution target image.  |

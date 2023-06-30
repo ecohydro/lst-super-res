@@ -66,10 +66,6 @@ coarsen_data: False
 # Note: Pretraining requires coarsening, default set to 8
 upsample_scale: 8
 
-### Visualization:
-# Declares whether predict.py should also create visualization images of prediction plots; called in code/predict.py
-visualize: True
-
 ### Pretraining:
 
 # Declares whether the model should perform pretraining (Boolean); called in code/dataset_class.py and code/split.py

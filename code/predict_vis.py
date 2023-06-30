@@ -1,7 +1,7 @@
 '''
-    Visualize model outputs:
-    This script loads in either val or test data and creates predictions using the trained model of choice. 
-    These predictions are plotted and evaluated using MSE, SSIM, and R2_score metrics. 
+    Evaluate and visualize model outputs:
+    This script contains functions for evaluation metrics and creating PNG images for each prediction. 
+    These predictions are evaluated using MSE, SSIM, and R2_score metrics.
 
     2022 Anna Boser
 '''
