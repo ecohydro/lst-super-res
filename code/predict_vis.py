@@ -21,7 +21,7 @@ from utils.utils import get_ssim
 from utils.utils import load
 
 
-def predict_vis(pred, coarse, ground_truth, image, landcover, split, input_basemap, visualize, experiment_dir):
+def predict_vis(pred, coarse, ground_truth, image, landcover, split, input_basemap, visualize, experiment_dir, pretrain):
     # Compute metrics
     r2_pred = get_r2(ground_truth, pred)
     mse_pred = get_mse(ground_truth, pred)
@@ -59,20 +59,24 @@ def predict_vis(pred, coarse, ground_truth, image, landcover, split, input_basem
         plt.axis("off")
         plt.subplot(1, 4, 2)
         plt.imshow(pred, vmin = np.nanmin(ground_truth), vmax= np.nanmax(ground_truth), cmap = 'coolwarm') 
-        plt.title(f'Prediction: r2 = {str(r2_pred)}, mse = {str(mse_pred)}, mae = {str(mae_pred)}')
+        plt.title(f'Prediction: r2 = {str(r2_pred)}, mse = {str(mse_pred)}, ssim = {str(ssim_pred)}')
         plt.axis("off")
         plt.subplot(1, 4, 3)
-        plt.imshow(coarse, vmin = np.nanmin(coarse), vmax= np.nanmax(coarse), cmap = 'coolwarm') 
-        plt.title(f'Coarsened input: r2 = {str(r2_coarse)}, mse = {str(mse_coarse)}, mae = {str(mae_coarse)}')
+        plt.imshow(coarse, vmin = np.nanmin(ground_truth), vmax= np.nanmax(ground_truth), cmap = 'coolwarm') 
+        plt.title(f'Coarsened input: r2 = {str(r2_coarse)}, mse = {str(mse_coarse)}, ssim = {str(ssim_coarse)}')
         plt.axis("off")
         plt.subplot(1, 4, 4)
         plt.imshow(rgb)
         plt.title(str(landcover[0]))
         plt.axis("off")
 
-        # create a directory to store prediction plots
-        os.makedirs(os.path.join(experiment_dir, "prediction_plots", str(split)), exist_ok=True)
-        plt.savefig(os.path.join(experiment_dir, "prediction_plots", str(split), str(image[0]).split(".tif")[0]+".png"))
-        # plt.show() # for the notebook version
+        if pretrain:
+            # create a directory to store prediction plots
+            os.makedirs(os.path.join(experiment_dir, "pretrain_prediction_plots", str(split)), exist_ok=True)
+            plt.savefig(os.path.join(experiment_dir, "pretrain_prediction_plots", str(split), str(image[0]).split(".tif")[0]+".png"))           
+        else:
+            # create a directory to store prediction plots
+            os.makedirs(os.path.join(experiment_dir, "prediction_plots", str(split)), exist_ok=True)
+            plt.savefig(os.path.join(experiment_dir, "prediction_plots", str(split), str(image[0]).split(".tif")[0]+".png"))
         plt.close('all')
     return df

@@ -163,6 +163,7 @@ RF/*
 
 metadata/*
 
+configs/dataloader.yaml
 configs/exp1.yaml
 configs/exp2.yaml
 configs/exp3.yaml

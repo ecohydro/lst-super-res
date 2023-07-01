@@ -17,6 +17,8 @@ import tifffile
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from skimage import img_as_float
 from skimage.metrics import structural_similarity
+from torch import Tensor
+from typing import Tuple
 
 def normalize_target(target_im: Tensor, target_mean: float, target_sd: float, mean_for_nans: bool = True) -> Tensor:
     """
@@ -61,7 +63,7 @@ def unnormalize_target(target_im: Tensor, target_mean: float, target_sd: float) 
     return target_im
 
 
-def normalize_basemap(basemap_im: Tensor, basemap_norms: dict, n_bands: int = 3) -> Tuple[Tensor, Tensor, Tensor]:
+def normalize_basemap(basemap_im: Tensor, basemap_norms: dict, n_bands: int = 3):
     """
     Normalize the basemap image tensor based on the provided mean and standard deviation.
 
@@ -167,7 +169,7 @@ def random_band_arithmetic(red_band: np.ndarray, green_band: np.ndarray, blue_ba
     """
     random.seed(seed)
     # Randomly choose the number of arithmetic operations to perform
-    num_operations = np.random.randint(1, 4)  # Choose a random integer from 1 to 4
+    num_operations = np.random.randint(1, 4)  # Choose a random integer from 1 to 3
     num_copies = np.random.randint(1, 4)
 
     # Create a list of bands to choose from
@@ -175,12 +177,14 @@ def random_band_arithmetic(red_band: np.ndarray, green_band: np.ndarray, blue_ba
 
     # Shuffle the bands list
     np.random.shuffle(bands)
+    copied_bands = bands.copy()
+    for _ in range(num_copies - 1):
+        copied_bands.extend(bands)  # Extend the copied list with the original list
 
     # Perform random arithmetic operations
     result = bands[0].copy()
     for i in range(1, num_operations):
-        random_int = np.random.choice(0,3)
-        band = bands[random_int]  # Select the band from the shuffled list
+        band = copied_bands[i]  # Select the band from the shuffled list
 
         operation = np.random.choice(['+', '-', '*', '/'])  # Randomly select the arithmetic operation
 

@@ -85,11 +85,11 @@ If you would like to load in a previously trained model for further training, us
 
 2. Predictions and validation
 
-Generate predictions and evaluation metrics. Predictions and associated metrics will be saved in the predictions folder of your experiment. If predictions are desired for another split, you can also specify 'test' or 'train'. If `visualize` is set to `True` in your configuration file, this file will also generate visualization plots for each prediction.
+Generate predictions and evaluation metrics. Predictions and associated metrics will be saved in the predictions folder of your experiment. If predictions are desired for another split, you can also specify 'test' or 'train'. If `--visualize` is set to `True`, this file will also generate visualization plots for each prediction.
 
 ```bash
-python code/predict.py --config configs/base.yaml --split train
-python code/predict.py --config configs/base.yaml --split val
+python code/predict.py --config configs/base.yaml --split train --visualize True
+python code/predict.py --config configs/base.yaml --split val --visualize True
 ```
 This will create the following folders and files:
 
@@ -97,7 +97,7 @@ This will create the following folders and files:
 
 `experiment_dir/prediction_metrics`: A folder containing a CSV file that includes evaluation metrics (R2, SSIM, MSE) for each prediction separated by split
 
-`experiment_dir/prediction_plots`: A folder containing PNG files that includes the basemap image, coarsened target image, predicted target image, and ground truth image for each prediction separated by split. Also shows image name, landcover type, prediction metrics and coarsened input metrics. Note: This folder is created only if `visualize` is set to `True` in your configuration file.
+`experiment_dir/prediction_plots`: A folder containing PNG files that includes the basemap image, coarsened target image, predicted target image, and ground truth image for each prediction separated by split. Also shows image name, landcover type, prediction metrics and coarsened input metrics. Note: This folder is created only if `--visualize` is set to `True`.
 
 3. Test/inference
 

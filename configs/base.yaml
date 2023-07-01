@@ -21,7 +21,7 @@ input_target: /home/waves/projects/lst-super-res/For_CNN/inputs/LST_672_70_10
 output_target: /home/waves/projects/lst-super-res/For_CNN/outputs/LST_672_10
 
 # Path to folder containing train/val/test split information; created in code/splits.py; called in code/dataset_class.py, code/predict_vis.py, and code/train.py
-splits_loc: /home/waves/projects/lst-super-res/metadata/pretrain_test_splits
+splits_loc: /home/waves/projects/lst-super-res/metadata/splits
 
 # Path to file containing normalization values of target data (*.txt); called in code/dataset_class.py, code/RF.py, and code/predict.py
 target_norm_loc: /home/waves/projects/lst-super-res/For_CNN/target_mean_sd_files672_70_10.txt
@@ -29,7 +29,7 @@ target_norm_loc: /home/waves/projects/lst-super-res/For_CNN/target_mean_sd_files
 basemap_norm_loc: /home/waves/projects/lst-super-res/For_CNN/basemap_mean_sd_files672_70_10.txt
 
 # Path to save this experiment's models; called in code/predict.py, code/predict_vis.py, and code/train.py
-experiment_dir: /home/waves/projects/lst-super-res/experiments/pretrain_test
+experiment_dir: /home/waves/projects/lst-super-res/experiments/base
 
 ### Model Training:
 
@@ -60,7 +60,7 @@ Seed: 1234
 
 # Declares whether the target ouput data should be coarsened to be the target input; called in code/dataset_class.py
 # Note: Only applicable for normal training as pre-training WILL coarsen data regardless
-coarsen_data: False
+coarsen_data: True
 
 # If coarsening is occuring, declare upsample scale amount for coarsened image; called in code/dataset_class.py
 # Note: Pretraining requires coarsening, default set to 8
@@ -69,7 +69,7 @@ upsample_scale: 8
 ### Pretraining:
 
 # Declares whether the model should perform pretraining (Boolean); called in code/dataset_class.py and code/split.py
-pretrain: True
+pretrain: False
 
 # Path to pretrain input basemap folder (3 channel bands); called in code/dataset_class.py and code/split.py
 pretrain_basemap: /home/waves/projects/lst-super-res/For_pretrain/tiles

@@ -1,37 +1,81 @@
 # In this file I have all the general configurations and data
 
-# environment/computational parameters
+### Environment/Computational Parameters:
+
+# Declare computing platform type (Ex: cuda); called in code/evaluate.py, code/predict.py, and code/train.py
 device: cuda
+
+# Declare amount of workers for computing; called in code/predict.py, code/RF.py, and code/train.py
 num_workers: 4
 
-# dataset parameters
-data_root: /home/rstofer/lst-super-res/
+### Dataset Parameters:
 
-input_basemap: /home/rstofer/lst-super-res/For_CNN/inputs/RGB_672_10
-input_target: /home/rstofer/lst-super-res/For_CNN/inputs/LST_672_70_10
-output_target: /home/rstofer/lst-super-res/For_CNN/outputs/LST_672_10
+# Path directory to all data information; called in code/splits.py
+data_root: /home/waves/projects/lst-super-res
 
-splits_loc: /home/rstofer/lst-super-res/metadata/splits
+# Path to input basemap folder (3 channel bands); called in code/splits.py, code/dataset_class.py, and code/predict_vis.py
+input_basemap: /home/waves/projects/lst-super-res/For_CNN/inputs/RGB_672_10
+# Path to input target folder (1 channel band); called in code/splits.py, code/dataset_class.py, and code/predict_vis.py
+input_target: /home/waves/projects/lst-super-res/For_CNN/inputs/LST_672_70_10
+# Path to output target folder (1 channel band); called in code/RF.py, code/splits.py, code/dataset_class.py, and code/predict_vis.py
+output_target: /home/waves/projects/lst-super-res/For_CNN/outputs/LST_672_10
 
-target_norm_loc: /home/rstofer/lst-super-res/For_CNN/target_mean_sd_files672_70_10.txt
-basemap_norm_loc: /home/rstofer/lst-super-res/For_CNN/basemap_mean_sd_files672_70_10.txt
+# Path to folder containing train/val/test split information; created in code/splits.py; called in code/dataset_class.py, code/predict_vis.py, and code/train.py
+splits_loc: /home/waves/projects/lst-super-res/metadata/pretrain_test_splits
 
-# directory to save this experiment's models
-experiment_dir: /home/rstofer/lst-super-res/experiments/exp3
+# Path to file containing normalization values of target data (*.txt); called in code/dataset_class.py, code/RF.py, and code/predict.py
+target_norm_loc: /home/waves/projects/lst-super-res/For_CNN/target_mean_sd_files672_70_10.txt
+# Path to file containing normalization values of basemap data (*.txt); called in code/dataset_class.py and code/predict.py
+basemap_norm_loc: /home/waves/projects/lst-super-res/For_CNN/basemap_mean_sd_files672_70_10.txt
 
-# model params
-learning_rate: 1e-5
-epochs: 50
-batch_size: 1
+# Path to save this experiment's models; called in code/predict.py, code/predict_vis.py, and code/train.py
+experiment_dir: /home/waves/projects/lst-super-res/experiments/exp3
 
-# augmentation probabilities
-HorizontalFlip: 0.5
-VerticalFlip: 0.5
-GaussianNoise: 0
-GaussianNoise_varLimit: 0.05
-RandomRotate90: 0.5
+### Model Training:
 
-# Calculate residuals
+# Determines whether the model should train on residuals (Boolean); called in code/dataset_class.py and code/predict.py
 Residual: True
 
+## Model training parameters:
+
+# Declares learning rate; called in code/train.py
+learning_rate: 1e-5
+
+# Declares amount of epochs for model training; called in code/predict.py and code/train.py
+epochs: 50
+
+# Declares batch size amount; called in code/predict.py, code/RF.py, and code/train.py
+batch_size: 1
+
+# Augmentation Probabilities to be applied on data; called in code/dataset_class.py
+HorizontalFlip: 0.5
+VerticalFlip: 0.5
+RandomRotate90: 0.5
+
+# Declares how many epochs have been completed already (Int); called in code/train.py
 epochs_done: 250
+
+# Set randomized seed (Int); called in code/dataset_class.py
+Seed: 1234
+
+# Declares whether the target ouput data should be coarsened to be the target input; called in code/dataset_class.py
+# Note: Only applicable for normal training as pre-training WILL coarsen data regardless
+coarsen_data: False
+
+# If coarsening is occuring, declare upsample scale amount for coarsened image; called in code/dataset_class.py
+# Note: Pretraining requires coarsening, default set to 8
+upsample_scale: 8
+
+### Pretraining:
+
+# Declares whether the model should perform pretraining (Boolean); called in code/dataset_class.py and code/split.py
+pretrain: False
+
+# Path to pretrain input basemap folder (3 channel bands); called in code/dataset_class.py and code/split.py
+pretrain_basemap: /home/waves/projects/lst-super-res/For_pretrain/tiles
+
+# Path to folder containing pretrain train/val/test split information; created in code/splits.py; called in code/dataset_class.py, code/predict_vis.py, and code/train.py
+pretrain_splits_loc: /home/waves/projects/lst-super-res/metadata/pretrain_test_splits
+
+# Path to file containing normalization values of pretrain basemap data (*.txt); called in code/dataset_class.py and code/predict.py
+pretrain_basemap_norm_loc: /home/waves/projects/lst-super-res/For_pretrain/basemap_mean_sd_files.txt

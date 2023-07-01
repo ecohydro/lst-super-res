@@ -1,7 +1,7 @@
 '''
     This script performs predictions using the trained UNet model and computes evaluation metrics (R2, RMSE, SSIM scores) on desired split. 
     Optionally, can generate visualization plots for each prediction.
-    
+
     2022 Anna Boser
 '''
 import argparse
@@ -38,7 +38,8 @@ def predict_img(net,
                 visualize,
                 input_basemap,
                 split,
-                experiment_dir):
+                experiment_dir,
+                pretrain):
 
     net.eval()
     num_val_batches = len(dataloader)
@@ -90,23 +91,28 @@ def predict_img(net,
 
                 # Masking for normal training
                 if not pretrain:
-                    mask = ground_truth < 0
+                    mask = np.isnan(label)
                     output[mask] = np.nan
-                    label[mask] = np.nan
-                    coarse[mask] = np.nan
+                    input_target[mask] = np.nan
 
                 # Compute and save input target and prediction metrics as a .csv file
-                pred_metrics = predict_vis(output, input_target, label, name, landcover, split, input_basemap, visualize, experiment_dir)
+                pred_metrics = predict_vis(output, input_target, label, name, landcover, split, input_basemap, visualize, experiment_dir, pretrain)
 
                 # Append prediction metric to base data frame
                 metrics_df = metrics_df.append(pred_metrics, ignore_index = True)
 
-        # save the pandas dataframe of evaluation metrics as csv
-        os.makedirs(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split)), exist_ok = True)
-        metrics_df.to_csv(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split), "prediction_metrics.csv"))
-
-        # Save the average metrics for entire dataset
-        metrics_df.mean().to_csv(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split), "prediction_metrics_mean.csv"))
+        if pretrain:
+            # save the pandas dataframe of evaluation metrics as csv
+            os.makedirs(os.path.join(cfg['experiment_dir'], 'pretrain_prediction_metrics', str(split)), exist_ok = True)
+            metrics_df.to_csv(os.path.join(cfg['experiment_dir'], 'pretrain_prediction_metrics', str(split), "prediction_metrics.csv"))
+            # Save the average metrics for entire dataset
+            metrics_df.mean().to_csv(os.path.join(cfg['experiment_dir'], 'pretrain_prediction_metrics', str(split), "prediction_metrics_mean.csv"))
+        else:
+            # save the pandas dataframe of evaluation metrics as csv
+            os.makedirs(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split)), exist_ok = True)
+            metrics_df.to_csv(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split), "prediction_metrics.csv"))
+            # Save the average metrics for entire dataset
+            metrics_df.mean().to_csv(os.path.join(cfg['experiment_dir'],'prediction_metrics', str(split), "prediction_metrics_mean.csv"))
     return 
 
 
@@ -151,21 +157,21 @@ if __name__ == '__main__':
 
     logging.info('Model loaded!')
 
-    # get the directory to save predictions to
-    predictions_dir = os.path.join(cfg['experiment_dir'], 'predictions', str(args.split))
-    os.makedirs(predictions_dir, exist_ok=True)
-
     pretrain = cfg['pretrain']
+
     if pretrain:
+        predictions_dir = os.path.join(cfg['experiment_dir'], 'pretrain_predictions', str(args.split)) # get the directory to save predictions to
         basemap_norm_loc = Path(cfg['pretrain_basemap_norm_loc'])
         input_basemap = cfg["pretrain_basemap"]
     else:
+        predictions_dir = os.path.join(cfg['experiment_dir'], 'predictions', str(args.split)) # get the directory to save predictions to
         basemap_norm_loc = Path(cfg['basemap_norm_loc'])
         input_basemap = cfg["input_basemap"]
+    os.makedirs(predictions_dir, exist_ok=True)
     basemap_norms = pd.read_csv(basemap_norm_loc, delim_whitespace=True).mean()
     # See if we calculate the residual instead
     residual = cfg['Residual']
     start = time.time()
-    predict_img(net, val_loader, device, basemap_norms, predictions_dir, residual, args.visualize, input_basemap, args.split, cfg['experiment_dir'])
+    predict_img(net, val_loader, device, basemap_norms, predictions_dir, residual, args.visualize, input_basemap, args.split, cfg['experiment_dir'], pretrain)
     end = time.time()-start
     print('Total prediction time:', end)

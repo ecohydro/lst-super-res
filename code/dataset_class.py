@@ -70,19 +70,20 @@ class BasicDataset(Dataset):
 
         else: # if you are doing regular training and not pretrainig, find files at these locations
             # data paths
-            self.input_target = Path(cfg['input_target'])
+            self.coarsen_data = cfg['coarsen_data']
+            if not self.coarsen_data:
+                self.input_target = Path(cfg['input_target'])
+                if not [file for file in listdir(self.input_target) if not file.startswith('.')]:
+                    raise RuntimeError(f'No input file found in {self.input_target}, make sure you put your images there')
             self.input_basemap = Path(cfg['input_basemap'])
             self.output_target = Path(cfg['output_target'])
             self.target_norm_loc = Path(cfg['target_norm_loc'])
             self.basemap_norm_loc = Path(cfg['basemap_norm_loc'])
             self.splits_loc = cfg['splits_loc'] # location to split file to indicate which tile belongs to which split
-            self.coarsen_data = cfg['coarsen_data']
 
             # check that images are in the given directories
             if not [file for file in listdir(self.input_basemap) if not file.startswith('.')]:
                 raise RuntimeError(f'No input file found in {self.input_basemap}, make sure you put your images there')
-            if not [file for file in listdir(self.input_target) if not file.startswith('.')]:
-                raise RuntimeError(f'No input file found in {self.input_target}, make sure you put your images there')
             if not [file for file in listdir(self.output_target) if not file.startswith('.')]:
                 raise RuntimeError(f'No input file found in {self.output_target}, make sure you put your images there')
 
@@ -135,11 +136,11 @@ class BasicDataset(Dataset):
 
         # if statement here based on if we want to train on the residual of the images
         if self.residual:
-            output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=True) - normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
+            output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False) - normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
         else:
             output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
             
-        input_target = normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=False)
+        input_target = normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
         ib1, ib2, ib3 = normalize_basemap(input_basemap_im, self.basemap_norms, n_bands=3) # normalize the basemap based on the normalizations set in the class initialization
         output_target = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
 
@@ -168,14 +169,16 @@ class BasicDataset(Dataset):
             output_target_im, target_mean, target_sd = random_band_arithmetic(r,g,b,seed = self.seed)
             input_target_im = coarsen_image(output_target_im, self.upsample_scale)
         else:
-            input_target_im = list(self.input_target.glob(name + '.tif*'))
             output_target_im = list(self.output_target.glob(name + '.tif*'))
-
-            assert len(input_target_im) == 1, f'Either no target input or multiple target inputs found for the ID {name}: {input_target_im}'
             assert len(output_target_im) == 1, f'Either no target output or multiple target outputs found for the ID {name}: {output_target_im}'
-            input_basemap_im = load(input_basemap_im[0], bands = 3)
-            input_target_im = load(input_target_im[0], bands = 1)
             output_target_im = load(output_target_im[0], bands = 1)
+            if self.coarsen_data:
+                input_target_im = coarsen_image(output_target_im, self.upsample_scale)
+            else:
+                input_target_im = list(self.input_target.glob(name + '.tif*'))
+                assert len(input_target_im) == 1, f'Either no target input or multiple target inputs found for the ID {name}: {input_target_im}'
+                input_target_im = load(input_target_im[0], bands = 1)
+            input_basemap_im = load(input_basemap_im[0], bands = 3)
             target_mean = self.target_norms[self.target_norms['file'] == (name + '.tif')]['mean'].mean()
             target_sd = self.target_norms[self.target_norms['file'] == (name + '.tif')]['sd'].mean()
 
