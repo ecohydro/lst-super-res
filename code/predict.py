@@ -41,14 +41,14 @@ def predict_img(net,
                 experiment_dir):
 
     net.eval()
-    num_val_batches = len(dataloader)
+    num_samples = len(dataloader)
 
     # Initialize metrics data frame to store all metric info
     metrics_df = pd.DataFrame(columns=['file', 'landcover', 'r2_pred', 'mse_pred', 'mae_pred','ssim_pred','r2_coarse', 'mse_coarse', 'mae_coarse', 'ssim_coarse'])
 
     # iterate over chosen split set
-    for batch in tqdm(dataloader, total=num_val_batches, desc='Making predictions', unit='batch', leave=False):
-        image, name, target_input, name, landcover = batch['image'], batch['name'], batch['input_target'], batch['name'], batch['landcover']
+    for sample in tqdm(dataloader, total=num_samples, desc='Making predictions', unit='sample', leave=False):
+        image, name, target_input, name, landcover = sample['image'], sample['name'], sample['input_target'], sample['name'], sample['landcover']
         # move images and labels to correct device and type
         image = image.to(device=device, dtype=torch.float32)
         target_input = target_input.to(device=device, dtype=torch.float32)
@@ -64,9 +64,9 @@ def predict_img(net,
                 # if we are calculating original values keep unnormalize_target
                 # else if we are calculating residuals, add to coarse array
                 if residual:
-                    output = unnormalize_target(target_input+output, batch['target_mean'], batch['target_sd']) # image is a float 32 torch
+                    output = unnormalize_target(target_input+output, sample['target_mean'], sample['target_sd']) # image is a float 32 torch
                 else:
-                    output = unnormalize_target(output, batch['target_mean'], batch['target_sd'])
+                    output = unnormalize_target(output, sample['target_mean'], sample['target_sd'])
 
                 # un-tensorify ouput prediction image
                 output = output.cpu().numpy()
@@ -80,11 +80,11 @@ def predict_img(net,
                 logging.info(f'Predictions saved to {out_filename}')
 
                 # call input and ground truth label for evaluating metrics
-                input_target = unnormalize_target(batch['input_target'], batch['target_mean'], batch['target_sd'])
+                input_target = unnormalize_target(sample['input_target'], sample['target_mean'], sample['target_sd'])
                 input_target = input_target.cpu().numpy()
                 input_target = input_target.squeeze()
 
-                label = unnormalize_target(batch['output_target'], batch['target_mean'], batch['target_sd'])
+                label = unnormalize_target(sample['output_target'], sample['target_mean'], sample['target_sd'])
                 label = label.cpu().numpy()
                 label = label.squeeze()
 
