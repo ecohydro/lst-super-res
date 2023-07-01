@@ -150,71 +150,6 @@ def unnormalize_image(normalized_image, basemap_norms, target_norms, n_bands = 3
 
     return (torch.cat([target_im,input_1,input_2,input_3], dim=0)).int()
 
-# This was the original random_band_arithmetic function -- can be deleted if random_band_arithmetic works fine. 
-
-# def randomize(r,g,b, seed = 1234):
-#     # Set seed
-#     random.seed(seed)
-#     # Declare number of r/g/b bands that will be iterated on
-#     rgb_num = np.random.randint(2,10)
-#     rgb_list = []
-#     # Generate list of r/g/b bands to iterate on
-#     for i in range(rgb_num):
-#         rgb_list.append(np.random.choice(['r','g','b']))
-#     op_num = rgb_num - 1
-#     ops = {'+':operator.add,
-#         '-':operator.sub,
-#         '*':operator.mul,
-#         '/':operator.truediv}
-#     op_list = []
-#     counter = 0
-#     # Perform correct operation according to proper r/g/b combination
-#     for i in range(op_num):
-#         # Create list of randomized operations
-#         op_list.append(np.random.choice(list(ops.keys())))
-#         # Perform first operation between two bands
-#         if counter == 0:
-#             if (rgb_list[i] == 'r') & (rgb_list[i+1] == 'r'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(r,r)
-#             elif (rgb_list[i] == 'r') & (rgb_list[i+1] == 'g'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(r,g)
-#             elif (rgb_list[i] == 'r') & (rgb_list[i+1] == 'b'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(r,b)
-#             elif (rgb_list[i] == 'g') & (rgb_list[i+1] == 'r'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(g,r)
-#             elif (rgb_list[i] == 'g') & (rgb_list[i+1] == 'g'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(g,g)
-#             elif (rgb_list[i] == 'g') & (rgb_list[i+1] == 'b'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(g,b)
-#             elif (rgb_list[i] == 'b') & (rgb_list[i+1] == 'r'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(b,r)
-#             elif (rgb_list[i] == 'b') & (rgb_list[i+1] == 'g'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(b,g)
-#             elif (rgb_list[i] == 'b') & (rgb_list[i+1] == 'b'):
-#                 rgb_list[i+1] = ops.get(op_list[i])(b,b)
-#             rgb_list[i+1] += 1 # Ensure no division by 0 occurs
-#             counter += 1
-#         # Perform next operation
-#         else:
-#             # Normalize data if values start to explode
-#             if np.max(np.abs(rgb_list[i])) > 10:
-#                 rgb_list[i+1] = ( rgb_list[i] - np.mean(rgb_list[i]) )/ np.std(rgb_list[i]) 
-#                 continue
-#             elif rgb_list[i+1] == 'r':
-#                 rgb_list[i+1] = ops.get(op_list[i])(rgb_list[i],r)
-#             elif rgb_list[i+1] == 'g':
-#                 rgb_list[i+1] = ops.get(op_list[i])(rgb_list[i],g)
-#             elif rgb_list[i+1] == 'b':
-#                 rgb_list[i+1] = ops.get(op_list[i])(rgb_list[i],b) 
-#     # Store mean and standard deviation of randomized output
-#     random_mean = np.mean(rgb_list[-1])
-#     random_sd = np.std(rgb_list[-1])
-#     # Print mean and standard deviation
-#     print('Mean:', random_mean, 'SD:', random_sd, flush = True)
-#     # Convert randomized output to Image object
-#     randomized_image = Image.fromarray(rgb_list[-1])
-#     return randomized_image, random_mean, random_sd # Returns randomized output including its mean and standard deviation
-
 
 def random_band_arithmetic(red_band: np.ndarray, green_band: np.ndarray, blue_band: np.ndarray,
                            seed: int = 1234) -> Tuple[Image.Image, float, float]:
@@ -240,14 +175,12 @@ def random_band_arithmetic(red_band: np.ndarray, green_band: np.ndarray, blue_ba
 
     # Shuffle the bands list
     np.random.shuffle(bands)
-    copied_bands = bands.copy()
-    for _ in range(num_copies - 1):
-        copied_bands.extend(bands)  # Extend the copied list with the original list
 
     # Perform random arithmetic operations
     result = bands[0].copy()
     for i in range(1, num_operations):
-        band = copied_bands[i]  # Select the band from the shuffled list
+        random_int = np.random.choice(0,3)
+        band = bands[random_int]  # Select the band from the shuffled list
 
         operation = np.random.choice(['+', '-', '*', '/'])  # Randomly select the arithmetic operation
 
@@ -306,19 +239,6 @@ def load(filename: str, bands: int) -> Image.Image:
                 raise ValueError('Image must be one or three bands')
         except Exception as e:
             raise ValueError('Failed to load the image: {}'.format(e))
-
-def coarsen(image, upsample = 8):
-    # first, change to 0-1
-    print('Image min:', np.nanmin(np.array(image)), flush = True)
-    print('Image max:', np.nanmax(np.array(image)), flush = True)
-    ds_array = np.array(image)/np.nanmax(np.array(image))
-    # Downsample
-    downsample_im = skimage.measure.block_reduce(ds_array,
-                            (upsample, upsample),
-                            np.mean)
-    # Resample by a factor of downsample variable with bilinear interpolation
-    coarsened_array = Image.fromarray(scipy.ndimage.zoom(downsample_im, upsample, order=1))
-    return coarsened_array
 
 def coarsen_image(image, factor):
     # Calculate the new dimensions based on the coarsening factor

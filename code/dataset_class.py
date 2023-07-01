@@ -135,11 +135,11 @@ class BasicDataset(Dataset):
 
         # if statement here based on if we want to train on the residual of the images
         if self.residual:
-            output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False) - normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
+            output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=True) - normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
         else:
             output = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
             
-        input_target = normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=True)
+        input_target = normalize_target(input_target_im, target_mean, target_sd, mean_for_nans=False)
         ib1, ib2, ib3 = normalize_basemap(input_basemap_im, self.basemap_norms, n_bands=3) # normalize the basemap based on the normalizations set in the class initialization
         output_target = normalize_target(output_target_im, target_mean, target_sd, mean_for_nans=False)
 
