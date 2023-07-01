@@ -24,11 +24,12 @@ _Note:_ depending on your setup you might have to install a different version of
 
 3. Add data
 
-The processed dataset for this particular project is currently not publicly available. However, one should manually add inputs and outputs and specify their paths in a configs/*.yaml file. Speficially, you will need to add paths to three folders:
+The processed dataset for this particular project is currently not publicly available. However, one should manually add inputs and outputs and specify their paths in a configs/*.yaml file. Speficially, you will need to add paths to three folders (or only two if `coarsen_data` is set to True):
 
 - `input_basemap`: This folder is constituted of 8-bit, 3-band images of your basemap of choice (in our case RGB), all the same size and resolution (e.g. 672x672 pixels at 10m resolution)
-- `input_target`: This folder is constituted of single band floating point images of your target (in our case LST) at a coarse resolution (e.g. 70m) but resampled to the same size and resolution as the basemap and the desired output. 
 - `output_target`: This folder is constituted of your labels: single band floating point images of your target (in our case LST) at the desired improved resolution (e.g. 10m in our case.) 
+- `input_target`: This folder is constituted of single band floating point images of your target (in our case LST) at a coarse resolution (e.g. 70m) but resampled to the same size and resolution as the basemap and the desired output. 
+- `coarsen_data`: This is a boolean value that when set to `True`, will set `input_target` to be a coarsened and resampled version of `output_target` (Use `upsample_scale` to set the resample scale).
 
 _Note:_ Corresponding images from matching scenes should be named the same between folders, or you will get an error. 
 
@@ -77,7 +78,7 @@ For each desired experiment, create a `*.yaml` configuration file that has the s
 python code/train.py --config configs/base.yaml
 ```
 
-This will create a trained model which is saved at each epoch in the checkpoints folder, `experiment_dir`. This folder contains model checkpoints, a copy of the configuration file used, and a copy of split info used during training. The path to this directory is declared in your configuration file. Note: ENSURE `experiment_dir` IS UNIQUE FOR EACH EXPERIMENT AS TO NOT OVERWRITE PREVIOUSLY SAVED EXPERIMENTS.
+This will create a trained model which is saved at each epoch in the checkpoints folder, `experiment_dir`. This folder contains model checkpoints, a copy of the configuration file used, and a copy of split info used during training. The path to this directory is declared in your configuration file. *Note:* **ENSURE `experiment_dir` IS UNIQUE FOR EACH EXPERIMENT AS TO NOT OVERWRITE PREVIOUSLY SAVED EXPERIMENTS.**
 
 During training, weights and biases (wandb) is used to automatically generate visualizations of the training data and plot out the loss (MSE) of the training and validation sets. Wandb logs are generated and saved in the folder `code/wandb`. 
 
@@ -98,6 +99,8 @@ This will create the following folders and files:
 `experiment_dir/prediction_metrics`: A folder containing a CSV file that includes evaluation metrics (R2, SSIM, MSE) for each prediction separated by split
 
 `experiment_dir/prediction_plots`: A folder containing PNG files that includes the basemap image, coarsened target image, predicted target image, and ground truth image for each prediction separated by split. Also shows image name, landcover type, prediction metrics and coarsened input metrics. Note: This folder is created only if `--visualize` is set to `True`.
+
+*Note:* If `pretrain` is set to `True` in your configuration file, the predictions will be based on your _pretraining data_ and will be stored in `experiment_dir/pretrain_predictions`, and prediction metrics and plots will be stored in `experiment_dir/pretrain_prediction_metrics` and `experiment_dir/pretrain_prediction_plots` respectively.
 
 3. Test/inference
 

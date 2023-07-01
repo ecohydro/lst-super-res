@@ -245,16 +245,39 @@ def load(filename: str, bands: int) -> Image.Image:
             raise ValueError('Failed to load the image: {}'.format(e))
 
 def coarsen_image(image, factor):
+    # Convert the image to a numpy array
+    image_array = np.array(image)
+
+    # Create a copy of the image array
+    coarsened_array = np.copy(image_array)
+
+    # Find NaN values in the image array
+    nan_indices = np.isnan(image_array)
+
     # Calculate the new dimensions based on the coarsening factor
     new_width = image.width // factor
     new_height = image.height // factor
 
-    # Resize the image using nearest neighbor interpolation
-    resized_image = image.resize((new_width, new_height), resample=Image.Resampling.NEAREST)
+    # Iterate over each new pixel and compute the average of valid pixels
+    for i in range(new_height):
+        for j in range(new_width):
+            # Calculate the indices of the corresponding pixels in the original image
+            start_y = i * factor
+            end_y = (i + 1) * factor
+            start_x = j * factor
+            end_x = (j + 1) * factor
 
-    # Scale back up to the original size using bilinear interpolation
-    coarsened_image = resized_image.resize((image.width, image.height), resample=Image.Resampling.BILINEAR)
+            # Compute the average of valid pixels within the new pixel
+            valid_pixels = image_array[start_y:end_y, start_x:end_x][~nan_indices[start_y:end_y, start_x:end_x]]
+            average_value = np.mean(valid_pixels) if valid_pixels.size > 0 else 0
 
+            # Assign the average value to the corresponding pixels in the coarsened array
+            coarsened_array[start_y:end_y, start_x:end_x][nan_indices[start_y:end_y, start_x:end_x]] = average_value
+    # Convert the coarsened array back to an image
+    coarsened_image = Image.fromarray(coarsened_array)
+
+    # Scale back up to the original size using nearest neighbor interpolation
+    coarsened_image = coarsened_image.resize((image.width, image.height), resample=Image.Resampling.NEAREST)
     return coarsened_image
 
 
