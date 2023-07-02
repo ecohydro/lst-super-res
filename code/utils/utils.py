@@ -245,18 +245,18 @@ def load(filename: str, bands: int) -> Image.Image:
             raise ValueError('Failed to load the image: {}'.format(e))
 
 def coarsen_image(image, factor):
-    # Convert the image to a numpy array
-    image_array = np.array(image)
-
-    # Create a copy of the image array
-    coarsened_array = np.copy(image_array)
-
-    # Find NaN values in the image array
+    # Convert the image to a numpy array and create a copy of the image array
+    image_array = np.copy(np.asarray(image))
+    
+    # Locate nan values and make them NaN if they are not already (-3.3999999521443642e+38 is NaN)
+    image_array[image_array == -3.3999999521443642e+38] = np.nan
+    
+    # Make a mask of NaN values in the image array
     nan_indices = np.isnan(image_array)
-
+    
     # Calculate the new dimensions based on the coarsening factor
-    new_width = image.width // factor
-    new_height = image.height // factor
+    new_width = math.ceil(image.width / factor)
+    new_height = math.ceil(image.height / factor)
 
     # Iterate over each new pixel and compute the average of valid pixels
     for i in range(new_height):
@@ -266,15 +266,16 @@ def coarsen_image(image, factor):
             end_y = (i + 1) * factor
             start_x = j * factor
             end_x = (j + 1) * factor
-
+    
             # Compute the average of valid pixels within the new pixel
             valid_pixels = image_array[start_y:end_y, start_x:end_x][~nan_indices[start_y:end_y, start_x:end_x]]
-            average_value = np.mean(valid_pixels) if valid_pixels.size > 0 else 0
-
+            average_value = np.mean(valid_pixels) if valid_pixels.size > 0 else np.nan
+    
             # Assign the average value to the corresponding pixels in the coarsened array
-            coarsened_array[start_y:end_y, start_x:end_x][nan_indices[start_y:end_y, start_x:end_x]] = average_value
+            image_array[start_y:end_y, start_x:end_x] = average_value
+            
     # Convert the coarsened array back to an image
-    coarsened_image = Image.fromarray(coarsened_array)
+    coarsened_image = Image.fromarray(image_array)
 
     # Scale back up to the original size using nearest neighbor interpolation
     coarsened_image = coarsened_image.resize((image.width, image.height), resample=Image.Resampling.NEAREST)
