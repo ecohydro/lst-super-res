@@ -34,7 +34,7 @@ The processed dataset for this particular project is currently not publicly avai
 _Note:_ Corresponding images from matching scenes should be named the same between folders, or you will get an error. 
 
 The location of some metadata must also be included in your configs file:
-- `splits_loc`: This the location of your file that determines how your dataset is to be split. This is created in step 4: 'Split data', and is a csv with the name of an image and whether it belongs to the "train", "val" or "test" set. The most recent file in this folder are used as your split.
+- `splits_loc`: This the location where you would like the file that determines how your dataset is to be split to be stored. This file is created in step 4: 'Split data', and is a csv with the name of an image and whether it belongs to the "train", "val" or "test" set. The most recent file in this folder are used as your split.
 - `target_norm_loc`: This is a space delimited file that includes mean and sd columns with entries for all of your target input images (in our case, LST). The average across these are taken to normalize the inputs. [This is being updated and likely be obsolete since mean and sd of. thetarget norm will be calcualted in the dataloader]. 
 - `basemap_norm_loc`: This is a space delimited file that includes mean (mean1, mean2, mean3) and sd (sd1, sd2, sd3) columns with entries for all of your input basemap images (in our case, RGB). The average across these are taken to normalize the inputs. This file is to be used both during pre-training and regular training of the model. 
 
