@@ -246,6 +246,17 @@ def load(filename: str, bands: int) -> Image.Image:
             raise ValueError('Failed to load the image: {}'.format(e))
 
 def coarsen_image(image, factor):
+    """
+    Takes a single band PIL image and 
+    (1) coarsens it by factor using box resampling and 
+    (2) resamples it back to its original resolution using nearest neighbor interpolation
+
+    If the number of pixels does not evenly divide into the number of pixels of the origial image, 
+    there will be "partial pixels" along the right and bottom edges of the image. 
+
+    Returns: the coarsened and resmapled to original resolution PIL image. 
+
+    """
     # Convert the image to a numpy array and create a copy of the image array
     image_array = np.copy(np.asarray(image))
     
