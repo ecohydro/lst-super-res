@@ -174,3 +174,5 @@ For_pretrain/*
 pre_train_code/*
 
 code/test.py
+.Rproj.user
+lst-super-res.Rproj
