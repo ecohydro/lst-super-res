@@ -68,7 +68,7 @@ if pretrain:
     # save the split
 
     # create the splits folder in the metadata folder if it doesn't exist already
-    output_dir = os.path.join(data_root, "metadata", "pretrain_test_splits")
+    output_dir = cfg['pretrain_splits_loc']
 
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -105,12 +105,12 @@ if pretrain:
     state = get_props('State')
 
     # create the splits folder in the metadata folder if it doesn't exist already
-    output_dir = os.path.join(data_root, "metadata", "pretrain_test_splits", "info")
+    info_dir = os.path.join(output_dir, "info")
 
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    if not os.path.exists(info_dir):
+        os.mkdir(info_dir)
 
-    with open(os.path.join(output_dir, outfile + ".txt"),"w") as file:
+    with open(os.path.join(info_dir, outfile + ".txt"),"w") as file:
         file.write("Config:\n")
         file.write(str(cfg))
         file.write("\n\n")
@@ -190,7 +190,7 @@ else:
     # save the split
 
     # create the splits folder in the metadata folder if it doesn't exist already
-    output_dir = os.path.join(data_root, "metadata", "splits")
+    output_dir = cfg['splits_loc']
 
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -230,12 +230,12 @@ else:
     hour = get_props('Hour')
 
     # create the splits folder in the metadata folder if it doesn't exist already
-    output_dir = os.path.join(data_root, "metadata", "splits", "info")
+    info_dir = os.path.join(output_dir, "info")
 
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    if not os.path.exists(info_dir):
+        os.mkdir(info_dir)
 
-    with open(os.path.join(output_dir, outfile + ".txt"),"w") as file:
+    with open(os.path.join(info_dir, outfile + ".txt"),"w") as file:
         file.write("Config:\n")
         file.write(str(cfg))
         file.write("\n\n")
