@@ -176,3 +176,11 @@ pre_train_code/*
 code/test.py
 .Rproj.user
 lst-super-res.Rproj
+
+# geojson for planet labs download
+geojson/*
+
+# downloaded quad.tif's
+pretraining_quads/*
+
+*.Rout
