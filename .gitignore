@@ -170,6 +170,8 @@ configs/exp3.yaml
 configs/exp4.yaml
 configs/download_planet_labs.yaml
 
+configs/*.yaml
+
 For_pretrain/*
 pre_train_code/*
 
