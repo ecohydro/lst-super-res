@@ -1,64 +1,84 @@
-# download quads from planet labs: https://developers.planet.com/apis/orders/basemaps/ 
-# Mitali Gaidhani
+# download quads from planet labs
+# adapted from: https://developers.planet.com/apis/orders/basemaps/ 
+# author: Mitali Gaidhani
 
-import requests
-import json
-import os
-import shutil
-from random import randint
-import time
-import pathlib
-import math
+# python has built-in modules - json, os, shutil, random, time, math, yaml
+import requests # already satisfied
 from requests.auth import HTTPBasicAuth
+import json 
+import os 
+import shutil 
+from random import randint 
+import time 
+import pathlib # not satisfied
 from pathlib import Path
-import yaml
+import math 
+import yaml 
 
-with open('download_planet_labs.yaml', 'r') as config_file:
+with open('configs/download_planet_labs.yaml', 'r') as config_file:
     config = yaml.safe_load(config_file)
 
-# setup API KEY
-PLANET_API_KEY = config['api_key']
-ORDERS_API_URL = 'https://api.planet.com/compute/ops/orders/v2'
+PLANET_API_KEY = config['api_key'] # setup API key
+ORDERS_API_URL = 'https://api.planet.com/compute/ops/orders/v2' # setup Orders API REST URL
 
-session = requests.Session()
-session.auth = (PLANET_API_KEY, "")
+session = requests.Session() # setup session
+session.auth = (PLANET_API_KEY, "") # authenticate
 auth = HTTPBasicAuth(PLANET_API_KEY, '')
 
+data_dir = 'data'
+existing_aois = []
+if os.path.exists(data_dir) and os.path.isdir(data_dir):
+    print(f'Reading contents of directory: {data_dir}')
 
-# read data from geojson directory
-directory = 'geojson'
-data = []
-filenames = []
-counter = 1
+    for root, dirs, files in os.walk(data_dir):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            aoi_path = os.path.basename(filepath)
+            try:
+                aoi_num = aoi_path.split('aoi_', 1)[1]
+                aoi_num = aoi_num.split('_', 1)[0]
+                print('AOIS in data directory:')
+                print(aoi_num)
+                existing_aois.append(aoi_num)
+            except Exception as e:
+                print(f'Error processing file: {filepath}')
+                print(f'Error message: {str(e)}')
+                continue
+else:
+    print(f'Directory does not exist: {data_dir}')
 
-# number of files in directory
-# print(len([name for name in os.listdir(directory) if os.path.isfile(os.path.join(directory, name))]))
+# read data from directory with geojson files
+directory = config['geojson_path']
+data = [] # list for coordinates
+filenames = [] # list with filenames
+# elements at the same index in the data and filenames list correspond with each other
+
+# print(len([name for name in os.listdir(directory) if os.path.isfile(os.path.join(directory, name))])) # number of files in directory
 
 for filename in os.listdir(directory):
     f = os.path.join(directory, filename)
     if(os.path.isfile(f)):
-        if(f != 'geojson/.DS_Store'):
+        # don't read the invisble .DS_Store file
+        # .DS_Store is an invisible file on macOS that gets generated when you look into a folder with Finder 
+        if(f != directory + '/.DS_Store'): 
             with open(f) as file:
                 for item in file:   
-                    start = item.find('"coordinates"') + 14
-                    end = item.find(',"type"', start)
-                    coords = item[start:end]
-                    print(coords + '\n')
+                    start = item.find('"coordinates"') + 14 # find coordinates parameter in aoi info
+                    end = item.find(',"type"', start) 
+                    coords = item[start:end] # read coordinates
+                    # print(coords + '\n')
                     data.append(coords)
                     filenames.append(f)
 
 print(len(data)) # extra - hidden DS_Store file 
 
-# make coordinates into arrays instead of a string
-# rectangle polygon - 5 coordinates, adjust accordingly for different polygon
+# make coordinates into nested arrays (they're read from the geojson file as a string)
+# for a rectangle polygon - 5 coordinates, adjust accordingly for different polygon
 coords_data = []
 
 for i in range(len(data)):
     points = []
-#     print("-------")
-#     print(data[i])
     coords = data[i].split('[', 3)[3]
-#     print(coords)
     
     point1 = []
     coordx = coords.split(',', 1)[0]
@@ -111,12 +131,12 @@ for i in range(len(data)):
     
     geom = []
     geom.append(points)
-    print(geom)
+    # print(geom)
     coords_data.append(geom)
 
 
 def make_order(coords):
-    # select random mosaic
+    # select random month and year for the mosaic
     month = str(randint(1, 12)).zfill(2)
     year = str(randint(2016, 2022))
     name = f"global_monthly_{year}_{month}_mosaic"
@@ -197,20 +217,21 @@ def planet_search(coords, image_num):
     headers = {"content-type": "application/json"}
     paramRes = requests.post(ORDERS_API_URL, data=json.dumps(order_params), auth=auth, headers=headers)
     
-    while True:
-        try:
-            order_url = ORDERS_API_URL + '/' + paramRes.json()['id']
-            break
-        except KeyError:
-            print("no basemap quads were found, trying different order parameters")
-            order = make_order(coords)
-            order_params = order[0]
-            month = order[1]
-            year = order[2]
-            print('order_params = ' + str(order_params))
+    order_url = ORDERS_API_URL + '/' + paramRes.json()['id']
+    # while True:
+    #     try:
+            # order_url = ORDERS_API_URL + '/' + paramRes.json()['id']
+            # break
+        # except KeyError:
+        #     print("no basemap quads were found, trying different order parameters")
+        #     order = make_order(coords)
+        #     order_params = order[0]
+        #     month = order[1]
+        #     year = order[2]
+        #     print('order_params = ' + str(order_params))
 
-            headers = {"content-type": "application/json"}
-            paramRes = requests.post(ORDERS_API_URL, data=json.dumps(order_params), auth=auth, headers=headers)
+        #     headers = {"content-type": "application/json"}
+        #     paramRes = requests.post(ORDERS_API_URL, data=json.dumps(order_params), auth=auth, headers=headers)
             
     poll_for_success(order_url, auth)
     r = requests.get(order_url, auth=session.auth)
@@ -227,15 +248,27 @@ def planet_search(coords, image_num):
 count = 0
 # add image number in saved quad data
 for i in range(len(coords_data)):
-    print(filenames[count])
+    print('Number of files to download: ' + filenames[count])
     file_num = filenames[count]
-    file_num = file_num.split('/', 1)[1]
+    file_num = os.path.basename(file_num)
     file_num = file_num.split('.', 1)[0]
+
+    if file_num not in existing_aois:
+        print('Ordering AOI ' + file_num)
+        while True:
+            try:
+                planet_search(coords_data[count], file_num)
+                break
+            except Exception as e:
+                print('An error occured:', str(e))
+                continue
+    else:
+        print('Skipping AOI ' + file_num)
     
-    planet_search(coords_data[count], file_num)
     count = count + 1
 
 
+print('Copying downloaded quads to ' + config['quad_download_path'])
 new_dir = Path(config['quad_download_path'])
 new_dir.mkdir(parents=True, exist_ok=True)
 
@@ -248,5 +281,5 @@ for path in tif_paths:
     shutil.move(path, new_path)
 
 # delete original download directory
+print('Deleting temporary directory')
 shutil.rmtree('data')
-
