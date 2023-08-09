@@ -23,6 +23,11 @@ output_target: /home/waves/projects/lst-super-res/For_CNN/outputs/LST_672_10
 # Path to folder containing train/val/test split information; created in code/splits.py; called in code/dataset_class.py, code/predict_vis.py, and code/train.py
 splits_loc: /home/waves/projects/lst-super-res/metadata/splits
 
+# Proportion of train, validation, and test data in the split; called in code/splits.py
+train_split: 0.6
+val_split: 0.2
+test_split: 0.2
+
 # Path to file containing normalization values of target data (*.txt); called in code/dataset_class.py, code/RF.py, and code/predict.py
 target_norm_loc: /home/waves/projects/lst-super-res/For_CNN/target_mean_sd_files672_70_10.txt
 # Path to file containing normalization values of basemap data (*.txt); called in code/dataset_class.py and code/predict.py

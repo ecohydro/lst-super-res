@@ -26,10 +26,6 @@ import numpy as np
 import re
 from datetime import datetime
 
-train_prop = .6
-val_prop = .2
-test_prop = .2
-
 # load config
 parser = argparse.ArgumentParser(description='Train deep learning model.')
 parser.add_argument('--config', help='Path to config file', default='configs/base.yaml')
@@ -37,6 +33,9 @@ args = parser.parse_args()
 print(f'Using config "{args.config}"')
 cfg = yaml.safe_load(open(args.config, 'r'))
 
+train_prop = cfg['train_split']
+val_prop = cfg['val_split']
+test_prop = cfg['test_split']
 
 pretrain = cfg['pretrain']
 data_root = cfg['data_root']
@@ -49,7 +48,20 @@ if pretrain:
     print(metadata)
     input_files = os.listdir(path = os.path.join(pretrain_basemap))
 
-    RGB_ID = [f.split('_')[0] for f in input_files]
+    # adding month and year columns - mitali
+    months = []
+    years = []
+    for f in input_files:
+        temp = f.split('_year_')[1]
+        year = temp.split('_')[0]
+        years.append(year)
+
+        temp = temp.split('_month_')[1]
+        month = temp.split('_')[0]
+        months.append(month)
+
+    # changed split index from 0 to 1 to account for quad naming convention (aoi_{id}_quad_{id}_year_{year}_month_{month})
+    RGB_ID = [f.split('_')[1] for f in input_files]
 
     random_GID = list(set(RGB_ID))
     random.shuffle(random_GID)
@@ -60,8 +72,13 @@ if pretrain:
     split = [split_dic[gid] for gid in RGB_ID]
 
     # create a metadata file for each tile with landocver, county, etc info
-    zipped = list(zip(input_files, RGB_ID, split))
-    tile_df = pd.DataFrame(zipped, columns=["tiles", "ID", "split"])
+    # zipped = list(zip(input_files, RGB_ID, split))
+    # tile_df = pd.DataFrame(zipped, columns=["tiles", "ID", "split"])
+
+    # add month and year columns to df - mitali
+    zipped = list(zip(input_files, RGB_ID, split, years, months))
+    tile_df = pd.DataFrame(zipped, columns=["tiles", "ID", "split", "Year", "Month"])
+
     tile_df['ID'] = tile_df['ID'].astype(int)
     tile_metadata = pd.merge(tile_df, metadata, on = "ID")
 
@@ -101,8 +118,20 @@ if pretrain:
     # relative occurance of primarily natural 
     lct = get_props('Main Cover')
 
-    # relative occurance of a country/state
+    # relative occurance of a state
     state = get_props('State')
+
+    # relative occurance of a country
+    country = get_props('Country')
+
+    # relative occurance of a continent
+    continent = get_props('Continent')
+
+    # relative occurance of a year
+    year = get_props('Year')
+
+    # relative occurance of a month
+    month = get_props('Month')
 
     # create the splits folder in the metadata folder if it doesn't exist already
     info_dir = os.path.join(output_dir, "info")
@@ -126,8 +155,20 @@ if pretrain:
         file.write("Land cover:\n")
         file.write(str(lct))
         file.write("\n\n")
-        file.write("State/country:\n")
+        file.write("State:\n")
         file.write(str(state))
+        file.write("\n\n")
+        file.write("Country:\n")
+        file.write(str(country))
+        file.write("\n\n")
+        file.write("Continent:\n")
+        file.write(str(continent))
+        file.write("\n\n")
+        file.write("Year:\n")
+        file.write(str(year))
+        file.write("\n\n")
+        file.write("Month:\n")
+        file.write(str(month))
         file.write("\n\n")
 
 else:
