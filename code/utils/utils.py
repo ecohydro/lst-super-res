@@ -3,6 +3,8 @@
 
     2022 Anna Boser
 '''
+# added by Mitali because of ValueError: Failed to load the image: <COMPRESSION.LZW: 5> requires the 'imagecodecs' package
+import imagecodecs
 
 import matplotlib.pyplot as plt
 import torch
