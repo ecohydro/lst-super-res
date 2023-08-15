@@ -85,7 +85,7 @@ If you would like to load in a previously trained model for further training, us
 
 2. Predictions and validation
 
-Generate predictions and evaluation metrics. Predictions and associated metrics will be saved in the predictions folder of your experiment. If predictions are desired for another split, you can also specify 'test' or 'train'. If `--visualize` is set to `True`, this file will also generate visualization plots for each prediction. Note that you can generate predictions and metrics on data other than what you trained on -- simply specify new paths in the configs file or change the pretraining status as you desire before this step. 
+Generate predictions and evaluation metrics. Predictions and associated metrics will be saved in the predictions folder of your experiment. If predictions are desired for another split, you can also specify 'test' or 'train'. If `--visualize` is set to `True`, this file will also generate visualization plots for each prediction. Note that you can generate predictions and metrics on data other than what you trained on: simply specify new paths in the configs file or change the pretraining status as you desire before this step. You can also validate one of the models saved at different epochs during the training process: simply specify `--model_epoch` followed by the epoch number. 
 
 ```bash
 python code/predict.py --config configs/base.yaml --split train --visualize True
