@@ -50,7 +50,6 @@ if __name__ == '__main__':
     num_data_batches = len(data_loader)
 
     output_target = cfg["output_target"]
-    target_norms = pd.read_csv(Path(cfg['target_norm_loc']), delim_whitespace=True).mean()  # Read target normalization values from a file
     metrics_df = pd.DataFrame(columns=['file', 'landcover', 'r2_pred', 'rmse_pred']) # Create an empty DataFrame to store prediction metrics
 
     rmse = np.zeros(shape= len(data_loader))
@@ -58,17 +57,19 @@ if __name__ == '__main__':
     i = 0
     for batch in tqdm(data_loader, total=num_data_batches, desc='Making predictions', unit='batch', leave=False):
         # Get each individual image data and metadata
-        image, name, target_input, landcover = batch['image'], batch['name'], batch['input_target'], batch['landcover']
+        image, name, target_input, target_mean, target_sd, landcover = batch['image'], batch['name'], batch['input_target'], batch['target_mean'], batch['target_sd'], batch['landcover']
 
         # convert for CPU usage
         image = image.cpu().numpy()
         image = image.squeeze()
 
+        target_mean = target_mean.cpu().numpy()
+        target_sd = target_sd.cpu().numpy()
         # Initialize data frame with coarsened image along with RGB and ground truth values
         coarse = image[0]
         ground_truth = np.array(Image.open(os.path.join(output_target, ''.join(name) + ".tif"))).flatten()
         ground_truth = ground_truth[~np.isnan(ground_truth)]
-        ground_truth = normalize_target(ground_truth, target_norms, mean_for_nans=False)
+        ground_truth = normalize_target(ground_truth, target_mean, target_sd, mean_for_nans=False)
         R = image[1]
         G = image[2]
         B = image[3]
@@ -82,22 +83,28 @@ if __name__ == '__main__':
         
         # Compute relevant metrics after unnormalizing prediction and ground truth
         ground_truth = df['ground_truth']
-        y_pred = (y_pred*target_norms['sd']) + target_norms['mean']
-        ground_truth = (ground_truth*target_norms['sd']) + target_norms['mean']
+        y_pred = (y_pred*target_sd) + target_mean
+        ground_truth = (ground_truth*target_sd) + target_mean
 
         r2_pred = round(metrics.r2_score(ground_truth[~np.isnan(ground_truth)], y_pred[~np.isnan(y_pred)]), 2)
         rmse_pred = round(np.sqrt(metrics.mean_squared_error(ground_truth[~np.isnan(ground_truth)], y_pred[~np.isnan(y_pred)])), 2)
+
+        r2_coarse = round(metrics.r2_score(ground_truth[~np.isnan(ground_truth)], coarse[~np.isnan(coarse)]), 2)
+        rmse_coarse = round(np.sqrt(metrics.mean_squared_error(ground_truth[~np.isnan(ground_truth)], coarse[~np.isnan(coarse)])), 2)
 
         # Generate dataframe to save results
         df2 = pd.DataFrame({
         'file': [name], 
         'landcover': [landcover],   
         'r2_pred': [r2_pred],
-        'rmse_pred': [rmse_pred]
+        'rmse_pred': [rmse_pred],
+        'r2_coarse': [r2_coarse],
+        'rmse_coarse': [rmse_coarse]
         })
         metrics_df = metrics_df.append(df2, ignore_index = True)
 
     # Save dataframe as .csv file
     metrics_df.to_csv(os.path.join('RF','results.csv')) # Save the evaluation metrics dataframe to a CSV file
+    metrics_df.groupby('landcover').mean().to_csv(os.path.join('RF','lc_results.csv'))
     end = time.time()-start
     print('End Time:', end) # Print the time taken for the prediction process to complete

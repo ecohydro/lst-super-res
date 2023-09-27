@@ -32,13 +32,13 @@ from predict_vis import predict_vis
 def predict_img(net,
                 dataloader,
                 device, 
-                basemap_norms, 
                 predictions_dir,
                 residual,
                 visualize,
                 input_basemap,
                 split,
                 experiment_dir,
+                model_epoch,
                 pretrain):
 
     net.eval()
@@ -49,7 +49,7 @@ def predict_img(net,
 
     # iterate over chosen split set
     for sample in tqdm(dataloader, total=num_samples, desc='Making predictions', unit='sample', leave=False):
-        image, name, target_input, name, landcover = sample['image'], sample['name'], sample['input_target'], sample['name'], sample['landcover']
+        image, target_input, name, landcover = sample['image'], sample['input_target'], sample['name'], sample['landcover']
         # move images and labels to correct device and type
         image = image.to(device=device, dtype=torch.float32)
         target_input = target_input.to(device=device, dtype=torch.float32)
@@ -96,23 +96,28 @@ def predict_img(net,
                     input_target[mask] = np.nan
 
                 # Compute and save input target and prediction metrics as a .csv file
-                pred_metrics = predict_vis(output, input_target, label, name, landcover, split, input_basemap, visualize, experiment_dir, pretrain)
+                group = name[0][:name[0].index("_")]
+                pred_metrics = predict_vis(output, input_target, label, name, landcover, split, input_basemap, visualize, experiment_dir, model_epoch, group, pretrain)
 
                 # Append prediction metric to base data frame
                 metrics_df = metrics_df.append(pred_metrics, ignore_index = True)
 
         if pretrain:
             # save the pandas dataframe of evaluation metrics as csv
-            os.makedirs(os.path.join(cfg['experiment_dir'], 'pretrain_prediction_metrics', str(split)), exist_ok = True)
-            metrics_df.to_csv(os.path.join(cfg['experiment_dir'], 'pretrain_prediction_metrics', str(split), "prediction_metrics.csv"))
+            os.makedirs(os.path.join(cfg['experiment_dir'], f'pretrain_prediction_metrics_{model_epoch}', str(split)), exist_ok = True)
+            metrics_df.to_csv(os.path.join(cfg['experiment_dir'], f'pretrain_prediction_metrics_{model_epoch}', str(split), "prediction_metrics.csv"))
             # Save the average metrics for entire dataset
-            metrics_df.mean().to_csv(os.path.join(cfg['experiment_dir'], 'pretrain_prediction_metrics', str(split), "prediction_metrics_mean.csv"))
+            metrics_df.mean().to_csv(os.path.join(cfg['experiment_dir'], f'pretrain_prediction_metrics_{model_epoch}', str(split), "prediction_metrics_mean.csv"))
+            metrics_df.groupby('landcover').mean().to_csv(os.path.join(cfg['experiment_dir'], f'pretrain_prediction_metrics_{model_epoch}', str(split), "prediction_lc_metrics_mean.csv"))
+            metrics_df.groupby('group').mean().to_csv(os.path.join(cfg['experiment_dir'], f'pretrain_prediction_metrics_{model_epoch}', str(split), "prediction_group_metrics_mean.csv"))
         else:
             # save the pandas dataframe of evaluation metrics as csv
-            os.makedirs(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split)), exist_ok = True)
-            metrics_df.to_csv(os.path.join(cfg['experiment_dir'], 'prediction_metrics', str(split), "prediction_metrics.csv"))
+            os.makedirs(os.path.join(cfg['experiment_dir'], f'prediction_metrics_{model_epoch}', str(split)), exist_ok = True)
+            metrics_df.to_csv(os.path.join(cfg['experiment_dir'], f'prediction_metrics_{model_epoch}', str(split), "prediction_metrics.csv"))
             # Save the average metrics for entire dataset
-            metrics_df.mean().to_csv(os.path.join(cfg['experiment_dir'],'prediction_metrics', str(split), "prediction_metrics_mean.csv"))
+            metrics_df.mean().to_csv(os.path.join(cfg['experiment_dir'],f'prediction_metrics_{model_epoch}', str(split), "prediction_metrics_mean.csv"))
+            metrics_df.groupby('landcover').mean().to_csv(os.path.join(cfg['experiment_dir'],f'prediction_metrics_{model_epoch}', str(split), "prediction_lc_metrics_mean.csv"))
+            metrics_df.groupby('group').mean().to_csv(os.path.join(cfg['experiment_dir'],f'prediction_metrics_{model_epoch}', str(split), "prediction_group_metrics_mean.csv"))
     return 
 
 
@@ -160,18 +165,17 @@ if __name__ == '__main__':
     pretrain = cfg['pretrain']
 
     if pretrain:
-        predictions_dir = os.path.join(cfg['experiment_dir'], 'pretrain_predictions', str(args.split)) # get the directory to save predictions to
+        predictions_dir = os.path.join(cfg['experiment_dir'], f'pretrain_predictions_{model_epoch}', str(args.split)) # get the directory to save predictions to
         basemap_norm_loc = Path(cfg['pretrain_basemap_norm_loc'])
         input_basemap = cfg["pretrain_basemap"]
     else:
-        predictions_dir = os.path.join(cfg['experiment_dir'], 'predictions', str(args.split)) # get the directory to save predictions to
+        predictions_dir = os.path.join(cfg['experiment_dir'], f'predictions_{model_epoch}', str(args.split)) # get the directory to save predictions to
         basemap_norm_loc = Path(cfg['basemap_norm_loc'])
         input_basemap = cfg["input_basemap"]
     os.makedirs(predictions_dir, exist_ok=True)
-    basemap_norms = pd.read_csv(basemap_norm_loc, delim_whitespace=True).mean()
     # See if we calculate the residual instead
     residual = cfg['Residual']
     start = time.time()
-    predict_img(net, val_loader, device, basemap_norms, predictions_dir, residual, args.visualize, input_basemap, args.split, cfg['experiment_dir'], pretrain)
+    predict_img(net, val_loader, device, predictions_dir, residual, args.visualize, input_basemap, args.split, cfg['experiment_dir'], model_epoch, pretrain)
     end = time.time()-start
     print('Total prediction time:', end)

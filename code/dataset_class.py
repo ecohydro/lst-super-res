@@ -7,7 +7,6 @@
 
 import logging
 import os
-import operator
 from os import listdir
 from os.path import splitext
 from pathlib import Path
@@ -15,22 +14,102 @@ import argparse
 import yaml
 import numpy as np
 import torch
-import torch.nn as nn
 from torchvision.transforms import ToTensor
-from PIL import Image
+from PIL import Image, ImageDraw
 from torch.utils.data import Dataset
 import pandas as pd
 import albumentations as A
-import skimage
-import scipy.ndimage
-from scipy import stats
-import tifffile
+import random
 
 from utils.utils import normalize_target
 from utils.utils import normalize_basemap
 from utils.utils import random_band_arithmetic
 from utils.utils import load
-from utils.utils import coarsen_image
+import math
+#from utils.utils import coarsen_image
+
+import torch.multiprocessing
+
+torch.multiprocessing.set_sharing_strategy('file_system')
+
+def coarsen_image(image, factor):
+    """
+    Takes a single band PIL image and 
+    (1) coarsens it by factor using box resampling and 
+    (2) resamples it back to its original resolution using nearest neighbor interpolation
+
+    If the number of pixels does not evenly divide into the number of pixels of the origial image, 
+    there will be "partial pixels" along the right and bottom edges of the image. 
+
+    Returns: the coarsened and resmapled to original resolution PIL image. 
+
+    """
+    # Convert the image to a numpy array and create a copy of the image array
+    image_array = np.copy(np.asarray(image))
+    
+    # Locate nan values and make them NaN if they are not already (-3.3999999521443642e+38 is NaN)
+    #image_array[image_array == -3.3999999521443642e+38] = np.nan
+    
+    # Make a mask of NaN values in the image array
+    nan_indices = np.isnan(image_array)
+    
+    # Calculate the new dimensions based on the coarsening factor
+    new_width = math.ceil(image.width / factor)
+    new_height = math.ceil(image.height / factor)
+
+    # Iterate over each new pixel and compute the average of valid pixels
+    for i in range(new_height):
+        for j in range(new_width):
+            # Calculate the indices of the corresponding pixels in the original image
+            start_y = i * factor
+            end_y = (i + 1) * factor
+            start_x = j * factor
+            end_x = (j + 1) * factor
+    
+            # Compute the average of valid pixels within the new pixel
+            valid_pixels = image_array[start_y:end_y, start_x:end_x][~nan_indices[start_y:end_y, start_x:end_x]]
+            average_value = np.mean(valid_pixels) if valid_pixels.size > 0 else np.nan
+    
+            # Assign the average value to the corresponding pixels in the coarsened array
+            image_array[start_y:end_y, start_x:end_x] = average_value
+            
+    # Convert the coarsened array back to an image
+    coarsened_image = Image.fromarray(image_array)
+
+    # Scale back up to the original size using nearest neighbor interpolation
+    coarsened_image = coarsened_image.resize((image.width, image.height), resample=Image.Resampling.NEAREST)
+    return coarsened_image
+
+
+def shade(image):
+    random.seed()
+    # Get image dimensions
+    width, height, channels = image.shape
+
+    # Define shading factor between 0 and 1
+    shading_factors = [random.uniform(0.5, 0.75) for _ in range(channels)] # for example, to reduce the brightness by 50% to 100%
+
+    # Define the number of vertices of the polygon
+    num_vertices = random.randint(3, 10)
+
+    # Generate random vertices
+    vertices = [(random.randint(0, width), random.randint(0, height)) for _ in range(num_vertices)]
+
+    # Create a new image with the same size as the original
+    mask = Image.new('L', (width, height), color=0)
+
+    # Create a draw object
+    draw = ImageDraw.Draw(mask)
+
+    # Fill the polygon on the new image
+    draw.polygon(vertices, fill=255)
+
+    # Convert the new image to a NumPy array for manipulation
+    mask = np.array(mask)
+
+    for channel in range(channels):
+        image[:, :, channel][mask>0] = (image[:, :, channel][mask>0] * shading_factors[channel]).astype(np.uint8)
+    return(image)
 
 class BasicDataset(Dataset):
     """Dataset class for image data.
@@ -163,6 +242,7 @@ class BasicDataset(Dataset):
         if self.pretrain == True:
             input_basemap_im = load(input_basemap_im[0], bands = 3)
             input_basemap_np = np.asarray(input_basemap_im, dtype=np.float32)
+            input_basemap_np = shade(input_basemap_np)
             r = input_basemap_np[:,:,0]
             g = input_basemap_np[:,:,1]
             b = input_basemap_np[:,:,2]

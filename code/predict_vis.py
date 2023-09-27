@@ -21,7 +21,7 @@ from utils.utils import get_ssim
 from utils.utils import load
 
 
-def predict_vis(pred, coarse, ground_truth, image, landcover, split, input_basemap, visualize, experiment_dir, pretrain):
+def predict_vis(pred, coarse, ground_truth, image, landcover, split, input_basemap, visualize, experiment_dir, model_epoch, group, pretrain):
     # Compute metrics
     r2_pred = get_r2(ground_truth, pred)
     mse_pred = get_mse(ground_truth, pred)
@@ -34,7 +34,8 @@ def predict_vis(pred, coarse, ground_truth, image, landcover, split, input_basem
 
     # Create data frame observation
     df = pd.DataFrame({
-        'file': [image[0] + '.tif'], 
+        'file': [image[0] + '.tif'],
+        'group': [group], 
         'landcover': [landcover[0]], 
         'r2_pred': [r2_pred], 
         'mse_pred': [mse_pred], 
@@ -46,8 +47,9 @@ def predict_vis(pred, coarse, ground_truth, image, landcover, split, input_basem
         'ssim_coarse': [ssim_coarse]
         })
 
+
     # Visualize image observation and metrics (optional)
-    if visualize:
+    if visualize == 'True':
         # Load in basemap
         rgb = np.array(load(os.path.join(input_basemap, image[0] + '.tif'), bands = 3))
 
@@ -72,11 +74,11 @@ def predict_vis(pred, coarse, ground_truth, image, landcover, split, input_basem
 
         if pretrain:
             # create a directory to store prediction plots
-            os.makedirs(os.path.join(experiment_dir, "pretrain_prediction_plots", str(split)), exist_ok=True)
-            plt.savefig(os.path.join(experiment_dir, "pretrain_prediction_plots", str(split), str(image[0]).split(".tif")[0]+".png"))           
+            os.makedirs(os.path.join(experiment_dir, f"pretrain_prediction_plots_{model_epoch}", str(split)), exist_ok=True)
+            plt.savefig(os.path.join(experiment_dir, f"pretrain_prediction_plots_{model_epoch}", str(split), str(image[0]).split(".tif")[0]+".png"))           
         else:
             # create a directory to store prediction plots
-            os.makedirs(os.path.join(experiment_dir, "prediction_plots", str(split)), exist_ok=True)
-            plt.savefig(os.path.join(experiment_dir, "prediction_plots", str(split), str(image[0]).split(".tif")[0]+".png"))
+            os.makedirs(os.path.join(experiment_dir, f"prediction_plots_{model_epoch}", str(split)), exist_ok=True)
+            plt.savefig(os.path.join(experiment_dir, f"prediction_plots_{model_epoch}", str(split), str(image[0]).split(".tif")[0]+".png"))
         plt.close('all')
     return df
